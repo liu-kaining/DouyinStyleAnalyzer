@@ -12,25 +12,162 @@
             color: white;
             padding: 2rem 0;
         }
-        .task-card {
-            border-left: 4px solid #007bff;
+        /* 任务卡片样式优化 */
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .action-buttons .btn-group .btn {
+            border-radius: 6px;
+            margin-right: 0;
+        }
+        
+        .action-buttons .btn-group .btn:not(:last-child) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        
+        .action-buttons .btn-group .btn:not(:first-child) {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+        
+        .task-item {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
             margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #e9ecef;
             transition: all 0.3s ease;
         }
-        .task-card:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        
+        .task-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
-        .task-card.completed {
+        
+        .task-item.completed {
             border-left-color: #28a745;
         }
-        .task-card.failed {
+        
+        .task-item.failed {
             border-left-color: #dc3545;
         }
-        .task-card.running {
+        
+        .task-item.running {
             border-left-color: #ffc107;
         }
-        .task-card.pending {
+        
+        .task-item.pending {
             border-left-color: #6c757d;
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .task-info {
+            flex: 1;
+        }
+        
+        .task-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            margin-right: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .task-name {
+            color: #495057;
+            font-weight: 600;
+            margin: 0;
+            font-size: 1rem;
+        }
+        
+        .task-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .meta-item {
+            color: #6c757d;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .task-actions .btn {
+            border-radius: 6px;
+            padding: 0.375rem 0.75rem;
+        }
+        
+        .task-stats {
+            border-top: 1px solid #f1f3f4;
+            padding-top: 1rem;
+        }
+        
+        .stats-row {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .stat-item.success {
+            color: #28a745;
+        }
+        
+        .stat-item.danger {
+            color: #dc3545;
+        }
+        
+        .stat-item.info {
+            color: #17a2b8;
+        }
+        
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .progress {
+            flex: 1;
+            background-color: #e9ecef;
+            border-radius: 3px;
+        }
+        
+        .progress-text {
+            color: #6c757d;
+            font-weight: 600;
+            min-width: 35px;
         }
         .video-item {
             border: 1px solid #dee2e6;
@@ -55,6 +192,254 @@
         }
         .status-badge {
             font-size: 0.75rem;
+        }
+        
+        /* 任务详情样式优化 */
+        .task-overview {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .task-info {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .task-title {
+            color: #495057;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .task-meta {
+            display: grid;
+            gap: 0.75rem;
+        }
+        
+        .meta-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .meta-item:last-child {
+            border-bottom: none;
+        }
+        
+        .meta-label {
+            font-weight: 600;
+            color: #6c757d;
+            min-width: 80px;
+        }
+        
+        .meta-value {
+            color: #212529;
+            text-align: right;
+            flex: 1;
+        }
+        
+        .task-stats {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            height: 100%;
+        }
+        
+        .stats-title {
+            color: #495057;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+        
+        .videos-section {
+            margin-top: 2rem;
+        }
+        
+        .videos-title {
+            color: #495057;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .videos-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .video-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #e9ecef;
+        }
+        
+        .video-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .video-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+        
+        .video-title h6 {
+            color: #495057;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .video-status {
+            text-align: right;
+        }
+        
+        .video-actions {
+            margin-bottom: 0.75rem;
+        }
+        
+        .transcript-content {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .transcript-title {
+            color: #007bff;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .transcript-text {
+            background: #f8f9fa;
+            padding: 0.75rem;
+            border-radius: 6px;
+            line-height: 1.6;
+            color: #495057;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+        }
+        
+        .progress-bar.bg-gradient {
+            background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+        }
+        
+        /* 响应式优化 */
+        @media (max-width: 768px) {
+            .task-overview {
+                padding: 1rem;
+            }
+            
+            .task-info, .task-stats {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stat-number {
+                font-size: 1.25rem;
+            }
+            
+            .video-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .video-status {
+                text-align: left;
+                margin-top: 0.5rem;
+            }
+            
+            /* 任务管理页面响应式 */
+            .action-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+            
+            .action-buttons .btn-group {
+                width: 100%;
+            }
+            
+            .action-buttons .btn-group .btn {
+                flex: 1;
+            }
+            
+            .task-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .task-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            
+            .task-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .stats-row {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .progress-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            
+            .progress {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -84,22 +469,31 @@
         <!-- 任务列表 -->
         <div class="row">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="mb-0">任务记录</h3>
-                        <div>
-                            <button class="btn btn-outline-primary btn-sm me-2" onclick="loadTasks()">
-                                <i class="bi bi-arrow-clockwise"></i> 刷新
-                            </button>
-                            <button class="btn btn-outline-danger btn-sm me-2" onclick="showClearAllModal()">
-                                <i class="bi bi-trash"></i> 清空所有
-                            </button>
-                            <button class="btn btn-outline-warning btn-sm me-2" onclick="showClearFilesModal()">
-                                <i class="bi bi-file-earmark-x"></i> 清除文件
-                            </button>
-                            <a href="/" class="btn btn-primary btn-sm">
-                                <i class="bi bi-plus"></i> 新建任务
-                            </a>
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white border-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="mb-1 text-dark fw-bold">
+                                    <i class="bi bi-list-ul text-primary me-2"></i>任务记录
+                                </h3>
+                                <p class="text-muted mb-0 small">管理和监控你的分析任务</p>
+                            </div>
+                            <div class="action-buttons">
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="loadTasks()" title="刷新列表">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                    <button class="btn btn-outline-warning btn-sm" onclick="showClearFilesModal()" title="清除音频文件">
+                                        <i class="bi bi-file-earmark-x"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="showClearAllModal()" title="清空所有任务">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                                <a href="/" class="btn btn-primary btn-sm ms-2">
+                                    <i class="bi bi-plus-circle"></i> 新建任务
+                                </a>
+                            </div>
                         </div>
                     </div>
                     <div class="card-body">
@@ -254,52 +648,56 @@
             }
 
             const tasksHtml = tasks.map(task => `
-                <div class="task-card card ${task.status} mb-3">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-9">
-                                <div class="d-flex align-items-center mb-2">
-                                    <span class="badge bg-${getStatusColor(task.status)} status-badge me-2">
-                                        ${getStatusText(task.status)}
-                                    </span>
-                                    <h6 class="mb-0 text-truncate" style="max-width: 300px;" title="${task.target_url}">
-                                        ${getDisplayName(task.target_url)}
-                                    </h6>
-                                </div>
-                                <div class="row text-muted small">
-                                    <div class="col-md-6">
-                                        <i class="bi bi-calendar"></i> ${formatDate(task.created_at)}
-                                    </div>
-                                    <div class="col-md-6">
-                                        <i class="bi bi-play-circle"></i> ${task.total_videos || 0} 个视频
-                                    </div>
-                                </div>
-                                <div class="row text-muted small mt-1">
-                                    <div class="col-md-3">
-                                        <i class="bi bi-check-circle text-success"></i> 成功: ${task.videos_success || 0}
-                                    </div>
-                                    <div class="col-md-3">
-                                        <i class="bi bi-x-circle text-danger"></i> 失败: ${task.videos_failed || 0}
-                                    </div>
-                                    <div class="col-md-6">
-                                        <i class="bi bi-clock"></i> 已处理: ${task.videos_processed || 0}/${task.total_videos || 0}
-                                    </div>
-                                </div>
+                <div class="task-item ${task.status}">
+                    <div class="task-header">
+                        <div class="task-info">
+                            <div class="task-title">
+                                <span class="status-badge bg-${getStatusColor(task.status)}">
+                                    ${getStatusText(task.status)}
+                                </span>
+                                <h6 class="task-name" title="${task.target_url}">
+                                    ${getDisplayName(task.target_url)}
+                                </h6>
                             </div>
-                            <div class="col-md-3 text-end">
-                                <div class="progress mb-2" style="height: 8px;">
-                                    <div class="progress-bar bg-${getStatusColor(task.status)}" 
-                                         style="width: ${task.progress || 0}%"></div>
-                                </div>
-                                <div class="btn-group-vertical btn-group-sm">
-                                    <button class="btn btn-outline-primary btn-sm" onclick="showTaskDetail('${task.id}')">
-                                        <i class="bi bi-eye"></i> 查看详情
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm" onclick="showDeleteModal('${task.id}')">
-                                        <i class="bi bi-trash"></i> 删除
-                                    </button>
-                                </div>
+                            <div class="task-meta">
+                                <span class="meta-item">
+                                    <i class="bi bi-calendar"></i> ${formatDate(task.created_at)}
+                                </span>
+                                <span class="meta-item">
+                                    <i class="bi bi-play-circle"></i> ${task.total_videos || 0} 个视频
+                                </span>
                             </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-outline-primary btn-sm" onclick="showTaskDetail('${task.id}')" title="查看详情">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="showDeleteModal('${task.id}')" title="删除任务">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="task-stats">
+                        <div class="stats-row">
+                            <div class="stat-item success">
+                                <i class="bi bi-check-circle"></i>
+                                <span>成功: ${task.videos_success || 0}</span>
+                            </div>
+                            <div class="stat-item danger">
+                                <i class="bi bi-x-circle"></i>
+                                <span>失败: ${task.videos_failed || 0}</span>
+                            </div>
+                            <div class="stat-item info">
+                                <i class="bi bi-clock"></i>
+                                <span>已处理: ${task.videos_processed || 0}/${task.total_videos || 0}</span>
+                            </div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-${getStatusColor(task.status)}" 
+                                     style="width: ${task.progress || 0}%"></div>
+                            </div>
+                            <small class="progress-text">${task.progress || 0}%</small>
                         </div>
                     </div>
                 </div>
@@ -332,64 +730,123 @@
             const content = document.getElementById('taskDetailContent');
             
             const videosHtml = task.videos ? task.videos.map(video => `
-                <div class="video-item ${video.processing_status}">
-                    <div class="row">
-                        <div class="col-md-8">
+                <div class="video-item mb-3">
+                    <div class="video-header">
+                        <div class="video-title">
                             <h6 class="mb-1">${video.title || '无标题'}</h6>
-                            <p class="mb-1">
-                                <small class="text-muted">视频ID: ${video.video_id}</small>
-                            </p>
-                            <p class="mb-1">
-                                <a href="${video.url}" target="_blank" class="text-decoration-none">
-                                    <i class="bi bi-link-45deg"></i> 查看视频
-                                </a>
-                            </p>
-                            ${video.transcript ? `
-                                <div class="transcript-preview">
-                                    <strong>转录内容:</strong><br>
-                                    ${video.transcript}
-                                </div>
-                            ` : ''}
+                            <small class="text-muted">视频ID: ${video.video_id}</small>
                         </div>
-                        <div class="col-md-4 text-end">
-                            <span class="badge bg-${getStatusColor(video.processing_status)} status-badge">
+                        <div class="video-status">
+                            <span class="badge bg-${getStatusColor(video.processing_status)}">
                                 ${getStatusText(video.processing_status)}
                             </span>
                             ${video.transcript_confidence ? `
-                                <br><small class="text-muted">置信度: ${(video.transcript_confidence * 100).toFixed(1)}%</small>
+                                <small class="text-muted d-block mt-1">
+                                    置信度: ${(video.transcript_confidence * 100).toFixed(1)}%
+                                </small>
                             ` : ''}
                         </div>
                     </div>
+                    <div class="video-actions">
+                        <a href="${video.url}" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-play-circle"></i> 查看视频
+                        </a>
+                    </div>
+                    ${video.transcript ? `
+                        <div class="transcript-content">
+                            <h6 class="transcript-title">
+                                <i class="bi bi-mic"></i> 转录内容
+                            </h6>
+                            <div class="transcript-text">
+                                ${video.transcript}
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
-            `).join('') : '<p class="text-muted">暂无视频数据</p>';
+            `).join('') : '<div class="text-center py-4"><i class="bi bi-inbox display-4 text-muted"></i><p class="text-muted mt-2">暂无视频数据</p></div>';
 
             content.innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>任务信息</h6>
-                        <table class="table table-sm">
-                            <tr><td><strong>任务ID:</strong></td><td>${task.id}</td></tr>
-                            <tr><td><strong>目标URL:</strong></td><td><a href="${task.target_url}" target="_blank">${task.target_url}</a></td></tr>
-                            <tr><td><strong>状态:</strong></td><td><span class="badge bg-${getStatusColor(task.status)}">${getStatusText(task.status)}</span></td></tr>
-                            <tr><td><strong>创建时间:</strong></td><td>${formatDate(task.created_at)}</td></tr>
-                            <tr><td><strong>完成时间:</strong></td><td>${task.completed_at ? formatDate(task.completed_at) : '未完成'}</td></tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>处理统计</h6>
-                        <table class="table table-sm">
-                            <tr><td><strong>总视频数:</strong></td><td>${task.total_videos || 0}</td></tr>
-                            <tr><td><strong>已处理:</strong></td><td>${task.videos_processed || 0}</td></tr>
-                            <tr><td><strong>成功:</strong></td><td>${task.videos_success || 0}</td></tr>
-                            <tr><td><strong>失败:</strong></td><td>${task.videos_failed || 0}</td></tr>
-                            <tr><td><strong>进度:</strong></td><td>${task.progress || 0}%</td></tr>
-                        </table>
+                <div class="task-overview mb-4">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="task-info">
+                                <h4 class="task-title">
+                                    <i class="bi bi-clipboard-data"></i> 任务详情
+                                </h4>
+                                <div class="task-meta">
+                                    <div class="meta-item">
+                                        <span class="meta-label">任务ID:</span>
+                                        <span class="meta-value">${task.id}</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">目标URL:</span>
+                                        <span class="meta-value">
+                                            <a href="${task.target_url}" target="_blank" class="text-decoration-none">
+                                                ${task.target_url.length > 60 ? task.target_url.substring(0, 60) + '...' : task.target_url}
+                                            </a>
+                                        </span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">状态:</span>
+                                        <span class="meta-value">
+                                            <span class="badge bg-${getStatusColor(task.status)} fs-6">
+                                                ${getStatusText(task.status)}
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">创建时间:</span>
+                                        <span class="meta-value">${formatDate(task.created_at)}</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">完成时间:</span>
+                                        <span class="meta-value">${task.completed_at ? formatDate(task.completed_at) : '未完成'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="task-stats">
+                                <h5 class="stats-title">
+                                    <i class="bi bi-bar-chart"></i> 处理统计
+                                </h5>
+                                <div class="stats-grid">
+                                    <div class="stat-item">
+                                        <div class="stat-number">${task.total_videos || 0}</div>
+                                        <div class="stat-label">总视频数</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-number">${task.videos_processed || 0}</div>
+                                        <div class="stat-label">已处理</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-number text-success">${task.videos_success || 0}</div>
+                                        <div class="stat-label">成功</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-number text-danger">${task.videos_failed || 0}</div>
+                                        <div class="stat-label">失败</div>
+                                    </div>
+                                </div>
+                                <div class="progress mt-3" style="height: 8px;">
+                                    <div class="progress-bar bg-gradient" 
+                                         style="width: ${task.progress || 0}%"></div>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <small class="text-muted">进度: ${task.progress || 0}%</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <hr>
-                <h6>视频列表</h6>
-                <div class="videos-list">
-                    ${videosHtml}
+                
+                <div class="videos-section">
+                    <h5 class="videos-title">
+                        <i class="bi bi-collection-play"></i> 视频列表
+                    </h5>
+                    <div class="videos-container">
+                        ${videosHtml}
+                    </div>
                 </div>
             `;
         }
