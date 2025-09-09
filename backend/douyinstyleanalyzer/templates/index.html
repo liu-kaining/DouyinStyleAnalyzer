@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DouyinStyleAnalyzer - 抖音博主风格分析系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow-light: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --shadow-medium: 0 15px 35px rgba(0, 0, 0, 0.15);
+            --shadow-heavy: 0 25px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            background: #f8fafc;
+        }
+
+        /* 导航栏 */
+        .navbar {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* 英雄区域 */
+        .hero-section {
+            background: var(--primary-gradient);
+            position: relative;
+            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.2) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-form {
+            position: relative;
+            z-index: 2;
+        }
+
+        .text-white-75 {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        .text-white-50 {
+            color: rgba(255, 255, 255, 0.7) !important;
+        }
+
+        /* 统计卡片 */
+        .hero-stats .stat-item {
+            padding: 1.5rem;
+            background: var(--glass-bg);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-stats .stat-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .hero-stats .stat-item:hover::before {
+            left: 100%;
+        }
+
+        .hero-stats .stat-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            line-height: 1;
+            font-weight: 800;
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* 英雄区域特性展示 */
+        .feature-highlight {
+            padding: 2rem 1rem;
+            background: var(--glass-bg);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-highlight::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .feature-highlight:hover::before {
+            left: 100%;
+        }
+
+        .feature-highlight:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .feature-icon-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .feature-icon-large i {
+            color: white;
+            font-size: 2.5rem;
+        }
+
+        /* 分析表单区域 */
+        .analysis-form .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: var(--shadow-heavy);
+            border: none;
+        }
+
+        .analysis-form .form-control, .analysis-form .form-select {
+            border-radius: 16px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .analysis-form .form-control:focus, .analysis-form .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            background: white;
+            transform: translateY(-2px);
+        }
+
+        .analysis-form .input-group-text {
+            border-radius: 16px 0 0 16px;
+            border: 2px solid #e2e8f0;
+            border-right: none;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        }
+
+        .analysis-form .input-group .form-control {
+            border-left: none;
+            border-radius: 0 16px 16px 0;
+        }
+
+        /* 平滑滚动 */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* 表单样式 */
+        .hero-form .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            box-shadow: var(--shadow-heavy);
+            overflow: hidden;
+        }
+
+        .form-control, .form-select {
+            border-radius: 16px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px);
+        }
+
+        .input-group-text {
+            border-radius: 16px 0 0 16px;
+            border: 2px solid #e2e8f0;
+            border-right: none;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        }
+
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 16px 16px 0;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            border-radius: 16px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            border: none;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-outline-primary {
+            border: 2px solid #667eea;
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-outline-primary:hover {
+            background: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-outline-success {
+            border: 2px solid #10b981;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .btn-outline-success:hover {
+            background: #10b981;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        /* 功能卡片 */
+        .feature-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            border-radius: 24px;
+            box-shadow: var(--shadow-light);
+            overflow: hidden;
+            background: white;
+            position: relative;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-heavy);
+        }
+
+        .feature-card .card-body {
+            padding: 2.5rem;
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            background: var(--primary-gradient);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .feature-icon i {
+            color: white;
+            font-size: 2rem;
+        }
+
+        .feature-badge .badge {
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            margin: 0.25rem;
+        }
+
+        /* 统计卡片 */
+        .stats-card {
+            background: white;
+            border: none;
+            border-radius: 20px;
+            box-shadow: var(--shadow-light);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary-gradient);
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .stats-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        }
+
+        .stats-icon i {
+            font-size: 1.8rem;
+        }
+
+        /* 通用卡片 */
+        .card {
+            border-radius: 20px;
+            border: none;
+            box-shadow: var(--shadow-light);
+        }
+
+        .card-title {
+            color: #1a202c;
+            font-weight: 700;
+        }
+
+        .form-label {
+            color: #2d3748;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .form-text {
+            color: #718096;
+            font-size: 0.875rem;
+        }
+
+        /* 徽章 */
+        .badge {
+            border-radius: 12px;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 2rem 0;
+                min-height: auto;
+            }
+            
+            .display-3 {
+                font-size: 2.5rem;
+            }
+            
+            .hero-stats .stat-item {
+                margin-bottom: 1rem;
+            }
+
+            .feature-card .card-body {
+                padding: 1.5rem;
+            }
+        }
+
+        /* 动画 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-gradient);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-camera-video me-2"></i> DouyinStyleAnalyzer
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link fw-semibold" href="/">
+                        <i class="bi bi-house me-1"></i> 首页
+                    </a>
+                    <a class="nav-link fw-semibold" href="/dashboard">
+                        <i class="bi bi-list-ul me-1"></i> 任务管理
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 英雄区域 - 介绍部分 -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center min-vh-100">
+                <div class="col-lg-8 mx-auto text-center">
+                    <div class="hero-content fade-in-up">
+                        <h1 class="display-2 fw-bold mb-4 text-white">
+                            <i class="bi bi-camera-video me-3"></i>
+                            抖音博主风格分析系统
+                        </h1>
+                        <p class="lead mb-5 text-white-75 fs-4">
+                            智能分析抖音博主的视频风格、语言特点，深度挖掘内容创作规律
+                        </p>
+                        
+                        <!-- 核心特性展示 -->
+                        <div class="hero-features mb-5">
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <div class="feature-highlight">
+                                        <div class="feature-icon-large mb-3">
+                                            <i class="bi bi-collection-play"></i>
+                                        </div>
+                                        <h5 class="text-white fw-bold">智能采集</h5>
+                                        <p class="text-white-50 small">自动获取博主视频列表</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="feature-highlight">
+                                        <div class="feature-icon-large mb-3">
+                                            <i class="bi bi-mic"></i>
+                                        </div>
+                                        <h5 class="text-white fw-bold">语音识别</h5>
+                                        <p class="text-white-50 small">95%+ 准确率转录</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="feature-highlight">
+                                        <div class="feature-icon-large mb-3">
+                                            <i class="bi bi-graph-up"></i>
+                                        </div>
+                                        <h5 class="text-white fw-bold">风格分析</h5>
+                                        <p class="text-white-50 small">深度挖掘创作规律</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 开始使用按钮 -->
+                        <div class="hero-actions">
+                            <a href="#analysis-section" class="btn btn-light btn-lg me-3 mb-3">
+                                <i class="bi bi-rocket-takeoff me-2"></i>
+                                立即开始分析
+                            </a>
+                            <a href="/dashboard" class="btn btn-outline-light btn-lg mb-3">
+                                <i class="bi bi-list-ul me-2"></i>
+                                查看任务记录
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 功能特性 -->
+    <section class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold text-dark mb-3">🚀 核心功能</h2>
+                <p class="lead text-muted">强大的AI驱动分析工具，让内容创作更智能</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-collection-play text-primary" style="font-size: 3.5rem;"></i>
+                            </div>
+                            <h5 class="card-title fw-bold">智能视频采集</h5>
+                            <p class="card-text text-muted">自动采集抖音博主的视频列表，支持批量处理，高效获取内容数据，智能去重避免重复分析。</p>
+                            <div class="feature-badge">
+                                <span class="badge bg-primary">批量处理</span>
+                                <span class="badge bg-success">智能去重</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-mic text-success" style="font-size: 3.5rem;"></i>
+                            </div>
+                            <h5 class="card-title fw-bold">语音识别转写</h5>
+                            <p class="card-text text-muted">基于 Whisper 模型，高精度转写视频语音内容，支持多语言识别，准确率高达95%以上。</p>
+                            <div class="feature-badge">
+                                <span class="badge bg-success">95%+ 准确率</span>
+                                <span class="badge bg-info">多语言支持</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-graph-up text-warning" style="font-size: 3.5rem;"></i>
+                            </div>
+                            <h5 class="card-title fw-bold">风格分析报告</h5>
+                            <p class="card-text text-muted">深度分析博主的创作风格、语言特点，生成详细的分析报告，助力内容创作优化。</p>
+                            <div class="feature-badge">
+                                <span class="badge bg-warning">深度分析</span>
+                                <span class="badge bg-primary">创作优化</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 分析操作区域 -->
+    <section id="analysis-section" class="py-5 bg-light">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="text-center mb-5">
+                        <h2 class="display-5 fw-bold text-dark mb-3">
+                            <i class="bi bi-gear me-2"></i>
+                            开始你的分析之旅
+                        </h2>
+                        <p class="lead text-muted">输入抖音博主链接，配置分析参数，一键开始智能分析</p>
+                    </div>
+                    
+                    <div class="analysis-form">
+                        <div class="card shadow-lg border-0">
+                            <div class="card-body p-5">
+                                <!-- 主要输入区域 -->
+                                <div class="mb-4">
+                                    <label for="userUrl" class="form-label fw-semibold">
+                                        <i class="bi bi-link-45deg me-1"></i> 抖音博主链接
+                                    </label>
+                                    <div class="input-group input-group-lg">
+                                        <span class="input-group-text bg-light">
+                                            <i class="bi bi-douyin text-primary"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="userUrl" 
+                                               placeholder="请输入抖音博主主页链接...">
+                                    </div>
+                                </div>
+
+                                <!-- 配置选项 -->
+                                <div class="row g-4 mb-4">
+                                    <div class="col-md-6">
+                                        <label for="maxVideos" class="form-label fw-semibold">
+                                            <i class="bi bi-collection-play me-1"></i> 视频数量
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="maxVideos" 
+                                                   value="20" min="1" max="100">
+                                            <span class="input-group-text">个</span>
+                                        </div>
+                                        <div class="form-text">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            建议不超过50个，避免处理时间过长
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="language" class="form-label fw-semibold">
+                                            <i class="bi bi-translate me-1"></i> 识别语言
+                                        </label>
+                                        <select class="form-select" id="language">
+                                            <option value="zh">🇨🇳 中文</option>
+                                            <option value="en">🇺🇸 英文</option>
+                                            <option value="auto">🤖 自动检测</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- 操作按钮 -->
+                                <div class="d-grid gap-3 mb-4">
+                                    <button class="btn btn-primary btn-lg" type="button" onclick="createAnalysisTask()">
+                                        <i class="bi bi-play-circle me-2"></i>
+                                        开始分析
+                                    </button>
+                                </div>
+
+                                <!-- 快捷操作 -->
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <a href="/dashboard" class="btn btn-outline-primary w-100">
+                                            <i class="bi bi-list-ul me-1"></i>
+                                            任务记录
+                                        </a>
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-success w-100" onclick="showDouyinLoginModal()">
+                                            <i class="bi bi-person-check me-1"></i>
+                                            抖音登录
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 系统状态 -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold text-dark mb-3">📊 系统状态</h2>
+                <p class="lead text-muted">实时监控系统运行状态和数据处理进度</p>
+            </div>
+            <div class="row g-4 justify-content-center" id="systemStats">
+                <div class="col-lg-4 col-md-6">
+                    <div class="card stats-card text-center h-100">
+                        <div class="card-body p-4">
+                            <div class="stats-icon mb-3">
+                                <i class="bi bi-heart-pulse text-success" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h6 class="card-title text-muted mb-2">系统状态</h6>
+                            <span class="badge bg-success fs-5 px-3 py-2" id="systemStatus">正常</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card stats-card text-center h-100">
+                        <div class="card-body p-4">
+                            <div class="stats-icon mb-3">
+                                <i class="bi bi-play-circle text-info" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h6 class="card-title text-muted mb-2">运行任务</h6>
+                            <span class="badge bg-info fs-5 px-3 py-2" id="runningTasks">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card stats-card text-center h-100">
+                        <div class="card-body p-4">
+                            <div class="stats-icon mb-3">
+                                <i class="bi bi-check-circle text-success" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h6 class="card-title text-muted mb-2">已完成</h6>
+                            <span class="badge bg-success fs-5 px-3 py-2" id="completedTasks">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card stats-card text-center h-100">
+                        <div class="card-body p-4">
+                            <div class="stats-icon mb-3">
+                                <i class="bi bi-collection-play text-primary" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h6 class="card-title text-muted mb-2">总视频数</h6>
+                            <span class="badge bg-primary fs-5 px-3 py-2" id="totalVideos">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card stats-card text-center h-100">
+                        <div class="card-body p-4">
+                            <div class="stats-icon mb-3">
+                                <i class="bi bi-download text-warning" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h6 class="card-title text-muted mb-2">已下载</h6>
+                            <span class="badge bg-warning fs-5 px-3 py-2" id="downloadedVideos">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="card stats-card text-center h-100">
+                        <div class="card-body p-4">
+                            <div class="stats-icon mb-3">
+                                <i class="bi bi-mic text-info" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h6 class="card-title text-muted mb-2">已转录</h6>
+                            <span class="badge bg-info fs-5 px-3 py-2" id="transcribedVideos">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 抖音登录模态框 -->
+    <div class="modal fade" id="douyinLoginModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">🔐 抖音登录说明</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-1-circle"></i> 第一步：打开抖音</h6>
+                        <p class="mb-2">请在新标签页中打开 <a href="https://www.douyin.com" target="_blank" class="text-decoration-none">抖音官网</a> 并完成登录</p>
+                        
+                        <h6><i class="bi bi-2-circle"></i> 第二步：确认登录</h6>
+                        <p class="mb-2">登录完成后，点击下方"已完成登录"按钮</p>
+                        
+                        <h6><i class="bi bi-3-circle"></i> 第三步：开始分析</h6>
+                        <p class="mb-0">系统将使用您的登录状态进行视频抓取</p>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="https://www.douyin.com" target="_blank" class="btn btn-primary me-2">
+                            <i class="bi bi-box-arrow-up-right"></i> 打开抖音官网
+                        </a>
+                        <button type="button" class="btn btn-success" onclick="confirmDouyinLogin()">
+                            <i class="bi bi-check-circle"></i> 已完成登录，开始分析
+                        </button>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务进度模态框 -->
+    <div class="modal fade" id="taskProgressModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">📊 任务进度</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="taskProgressContent">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                            <p class="mt-2">正在启动任务...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentTaskId = null;
+        let progressInterval = null;
+
+        // 页面加载时更新系统状态
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSystemStatus();
+            setInterval(updateSystemStatus, 30000); // 每30秒更新一次
+        });
+
+        // 更新系统状态
+        async function updateSystemStatus() {
+            try {
+                const response = await fetch('/api/v1/system/status');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    document.getElementById('systemStatus').textContent = data.system_status === 'healthy' ? '正常' : '异常';
+                    document.getElementById('runningTasks').textContent = data.active_tasks || 0;
+                    document.getElementById('completedTasks').textContent = data.completed_tasks || 0;
+                    
+                    // 显示视频统计
+                    if (data.video_stats) {
+                        document.getElementById('totalVideos').textContent = data.video_stats.total_videos || 0;
+                        document.getElementById('downloadedVideos').textContent = data.video_stats.downloaded_videos || 0;
+                        document.getElementById('transcribedVideos').textContent = data.video_stats.transcribed_videos || 0;
+                    }
+                    
+                }
+            } catch (error) {
+                console.error('获取系统状态失败:', error);
+            }
+        }
+
+        // 显示抖音登录模态框
+        function showDouyinLoginModal() {
+            const modal = new bootstrap.Modal(document.getElementById('douyinLoginModal'));
+            modal.show();
+        }
+
+        // 确认抖音登录
+        function confirmDouyinLogin() {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('douyinLoginModal'));
+            modal.hide();
+            showMessage('请先输入抖音博主链接，然后开始分析', 'info');
+        }
+
+        // 创建分析任务
+        async function createAnalysisTask() {
+            const userUrl = document.getElementById('userUrl').value.trim();
+            const maxVideos = parseInt(document.getElementById('maxVideos').value) || 20;
+            const language = document.getElementById('language').value || 'zh';
+            
+            if (!userUrl) {
+                showMessage('请输入抖音博主主页链接', 'warning');
+                return;
+            }
+
+            if (!userUrl.includes('douyin.com')) {
+                showMessage('请输入有效的抖音链接', 'warning');
+                return;
+            }
+
+            if (maxVideos < 1 || maxVideos > 100) {
+                showMessage('视频数量必须在1-100之间', 'warning');
+                return;
+            }
+
+            try {
+                showMessage(`正在创建任务，将分析最多 ${maxVideos} 个视频...`, 'info');
+                
+                const response = await fetch('/api/v1/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        target_url: userUrl,
+                        max_videos: maxVideos,
+                        language: language,
+                        enable_transcription: true,
+                        whisper_model: 'small'
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('任务创建成功！正在开始分析...', 'success');
+                    document.getElementById('userUrl').value = '';
+                    
+                    // 开始监控任务进度
+                    startTaskMonitoring(result.data.task_id);
+                } else {
+                    showMessage('任务创建失败: ' + result.error, 'danger');
+                }
+            } catch (error) {
+                showMessage('网络错误: ' + error.message, 'danger');
+            }
+        }
+
+        // 开始监控任务进度
+        function startTaskMonitoring(taskId) {
+            currentTaskId = taskId;
+            const modal = new bootstrap.Modal(document.getElementById('taskProgressModal'));
+            modal.show();
+            
+            // 开始轮询任务状态
+            progressInterval = setInterval(updateTaskProgress, 2000);
+            updateTaskProgress();
+        }
+
+        // 更新任务进度
+        async function updateTaskProgress() {
+            if (!currentTaskId) return;
+            
+            try {
+                const response = await fetch(`/api/v1/tasks/${currentTaskId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const task = result.data;
+                    displayTaskProgress(task);
+                    
+                    // 如果任务完成或失败，停止轮询
+                    if (task.status === 'completed' || task.status === 'failed') {
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                        
+                        if (task.status === 'completed') {
+                            showMessage('任务完成！', 'success');
+                        } else {
+                            showMessage('任务失败: ' + (task.error_message || '未知错误'), 'danger');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('获取任务进度失败:', error);
+            }
+        }
+
+        // 显示任务进度
+        function displayTaskProgress(task) {
+            const content = document.getElementById('taskProgressContent');
+            
+            const progressPercent = task.progress || 0;
+            const statusText = getStatusText(task.status);
+            const statusColor = getStatusColor(task.status);
+            
+            content.innerHTML = `
+                <div class="mb-3">
+                    <h6>任务状态: <span class="badge bg-${statusColor}">${statusText}</span></h6>
+                    <div class="progress">
+                        <div class="progress-bar bg-${statusColor}" style="width: ${progressPercent}%"></div>
+                    </div>
+                    <small class="text-muted">${progressPercent}% 完成</small>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>目标URL:</strong><br><small class="text-muted">${task.target_url}</small></p>
+                        <p><strong>创建时间:</strong><br><small class="text-muted">${formatDate(task.created_at)}</small></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>视频统计:</strong></p>
+                        <ul class="list-unstyled">
+                            <li>总视频数: ${task.total_videos || 0}</li>
+                            <li>已处理: ${task.videos_processed || 0}</li>
+                            <li>成功: ${task.videos_success || 0}</li>
+                            <li>失败: ${task.videos_failed || 0}</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                ${task.status_message ? `<div class="alert alert-info"><small>${task.status_message}</small></div>` : ''}
+            `;
+        }
+
+        // 工具函数
+        function getStatusColor(status) {
+            const colors = {
+                'completed': 'success',
+                'failed': 'danger',
+                'running': 'warning',
+                'pending': 'secondary'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'completed': '已完成',
+                'failed': '失败',
+                'running': '运行中',
+                'pending': '等待中'
+            };
+            return texts[status] || status;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '未知';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN');
+        }
+
+        function showMessage(message, type) {
+            // 创建提示消息
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // 3秒后自动消失
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
