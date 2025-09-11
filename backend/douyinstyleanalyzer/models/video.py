@@ -2,8 +2,15 @@
 视频数据模型
 """
 
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from .. import db
+
+# 东八区时区
+CHINA_TZ = timezone(timedelta(hours=8))
+
+def china_now():
+    """获取东八区当前时间"""
+    return datetime.now(CHINA_TZ)
 
 
 class VideoData(db.Model):
@@ -35,13 +42,15 @@ class VideoData(db.Model):
     audio_file_size = db.Column(db.Integer, nullable=True)  # 音频文件大小（字节）
     
     # 时间戳
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=china_now, nullable=False)
+    updated_at = db.Column(db.DateTime, default=china_now, onupdate=china_now)
     processed_at = db.Column(db.DateTime, nullable=True)
     
     # 错误信息
     error_message = db.Column(db.Text, nullable=True)
     retry_count = db.Column(db.Integer, default=0, nullable=False)
+    last_retry_at = db.Column(db.DateTime, nullable=True)  # 最后重试时间
+    retry_errors = db.Column(db.Text, nullable=True)  # 重试错误历史（JSON格式）
     
     def __repr__(self):
         return f'<VideoData {self.video_id}>'
@@ -88,6 +97,15 @@ class VideoData(db.Model):
     
     def to_dict(self):
         """转换为字典"""
+        def format_time_with_tz(dt):
+            """格式化时间，确保包含时区信息"""
+            if not dt:
+                return None
+            # 如果没有时区信息，假设是东八区时间
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=CHINA_TZ)
+            return dt.isoformat()
+        
         return {
             'id': self.id,
             'task_id': self.task_id,
@@ -103,11 +121,13 @@ class VideoData(db.Model):
             'language_detected': self.language_detected,
             'audio_file_path': self.audio_file_path,
             'audio_file_size': self.audio_file_size,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'processed_at': self.processed_at.isoformat() if self.processed_at else None,
+            'created_at': format_time_with_tz(self.created_at),
+            'updated_at': format_time_with_tz(self.updated_at),
+            'processed_at': format_time_with_tz(self.processed_at),
             'error_message': self.error_message,
-            'retry_count': self.retry_count
+            'retry_count': self.retry_count,
+            'last_retry_at': format_time_with_tz(self.last_retry_at),
+            'retry_errors': self.retry_errors
         }
     
     def update_status(self, status, error_message=None):
@@ -118,9 +138,9 @@ class VideoData(db.Model):
             self.retry_count += 1
         
         if status == 'completed':
-            self.processed_at = datetime.utcnow()
+            self.processed_at = china_now()
         
-        self.updated_at = datetime.utcnow()
+        self.updated_at = china_now()
         db.session.commit()
     
     def set_audio_info(self, file_path, file_size):
@@ -128,7 +148,7 @@ class VideoData(db.Model):
         self.audio_file_path = file_path
         self.audio_file_size = file_size
         self.audio_downloaded = True
-        self.updated_at = datetime.utcnow()
+        self.updated_at = china_now()
         db.session.commit()
     
     def set_transcription_result(self, transcript, confidence=None, language=None):
@@ -138,8 +158,8 @@ class VideoData(db.Model):
         self.language_detected = language
         self.transcription_completed = True
         self.processing_status = 'completed'
-        self.processed_at = datetime.utcnow()
-        self.updated_at = datetime.utcnow()
+        self.processed_at = china_now()
+        self.updated_at = china_now()
         db.session.commit()
     
     @classmethod
@@ -158,6 +178,47 @@ class VideoData(db.Model):
         """检查是否已处理完成"""
         return self.processing_status == 'completed'
     
-    def can_retry(self, max_retries=3):
+    def can_retry(self, max_retries=10):
         """检查是否可以重试"""
         return self.retry_count < max_retries and self.processing_status == 'failed'
+    
+    def add_retry_error(self, error_message):
+        """添加重试错误记录"""
+        import json
+        
+        try:
+            # 解析现有的错误历史
+            if self.retry_errors:
+                error_history = json.loads(self.retry_errors)
+            else:
+                error_history = []
+            
+            # 添加新的错误记录
+            error_record = {
+                'retry_count': self.retry_count,
+                'error_message': error_message,
+                'timestamp': china_now().isoformat()
+            }
+            error_history.append(error_record)
+            
+            # 保存错误历史（最多保留最近20条）
+            if len(error_history) > 20:
+                error_history = error_history[-20:]
+            
+            self.retry_errors = json.dumps(error_history, ensure_ascii=False)
+            self.last_retry_at = china_now()
+            
+        except Exception as e:
+            print(f"⚠️ 保存重试错误历史失败: {e}")
+    
+    def get_retry_errors(self):
+        """获取重试错误历史"""
+        import json
+        
+        try:
+            if self.retry_errors:
+                return json.loads(self.retry_errors)
+            return []
+        except Exception as e:
+            print(f"⚠️ 解析重试错误历史失败: {e}")
+            return []

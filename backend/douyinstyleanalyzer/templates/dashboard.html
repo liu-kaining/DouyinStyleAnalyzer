@@ -569,10 +569,45 @@
             border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 1rem;
-            max-height: 300px;
-            overflow-y: auto;
+            margin: 0.75rem 0;
+            font-size: 0.9rem;
             line-height: 1.6;
             color: var(--text-primary);
+        }
+
+        .transcript-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .transcript-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .transcript-text {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 0.5rem;
+            background: var(--light-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .copy-btn {
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
         }
 
         .confidence-badge {
@@ -822,9 +857,14 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-                    <button type="button" class="btn btn-success" id="exportBtn" onclick="exportTask()">
-                        <i class="bi bi-download"></i> 导出数据
-                    </button>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-success" onclick="exportTask('csv')">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> 导出CSV
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="exportTask('pdf')">
+                            <i class="bi bi-file-earmark-pdf"></i> 导出PDF
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -920,7 +960,18 @@
                 if (result.success) {
                     displayTasks(result.data.tasks);
                 } else {
-                    showError('加载任务列表失败: ' + result.error);
+                    // 正确处理错误对象
+                    let errorMessage = '加载任务列表失败';
+                    if (result.error) {
+                        if (typeof result.error === 'string') {
+                            errorMessage += ': ' + result.error;
+                        } else if (result.error.message) {
+                            errorMessage += ': ' + result.error.message;
+                        } else if (result.error.code) {
+                            errorMessage += ': ' + result.error.code;
+                        }
+                    }
+                    showError(errorMessage);
                 }
             } catch (error) {
                 showError('网络错误: ' + error.message);
@@ -1014,7 +1065,18 @@
                     const modal = new bootstrap.Modal(document.getElementById('taskDetailModal'));
                     modal.show();
                 } else {
-                    showError('加载任务详情失败: ' + result.error);
+                    // 正确处理错误对象
+                    let errorMessage = '加载任务详情失败';
+                    if (result.error) {
+                        if (typeof result.error === 'string') {
+                            errorMessage += ': ' + result.error;
+                        } else if (result.error.message) {
+                            errorMessage += ': ' + result.error.message;
+                        } else if (result.error.code) {
+                            errorMessage += ': ' + result.error.code;
+                        }
+                    }
+                    showError(errorMessage);
                 }
             } catch (error) {
                 showError('网络错误: ' + error.message);
@@ -1036,13 +1098,24 @@
                     </div>
                     ${video.transcript ? `
                         <div class="transcript-content">
-                            ${video.transcript}
+                            <div class="transcript-header">
+                                <span class="transcript-label">转录文本</span>
+                                <button class="btn btn-primary btn-sm copy-btn" onclick="copyTranscript('${video.video_id}', \`${video.transcript.replace(/`/g, '\\`')}\`)">
+                                    <i class="bi bi-clipboard"></i> 复制文案
+                                </button>
+                            </div>
+                            <div class="transcript-text">${video.transcript}</div>
                         </div>
                     ` : ''}
                     <div class="video-actions">
                         <button class="btn btn-outline-primary btn-sm" onclick="window.open('https://www.douyin.com/video/${video.video_id}', '_blank')">
                             <i class="bi bi-play-circle"></i> 查看视频
                         </button>
+                        ${video.audio_downloaded ? `
+                            <button class="btn btn-outline-success btn-sm" onclick="downloadVideo('${task.id}', '${video.video_id}')">
+                                <i class="bi bi-download"></i> 下载视频
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
             `).join('') : '<div class="empty-state"><i class="bi bi-inbox"></i><h4>暂无视频数据</h4><p>该任务还没有处理任何视频</p></div>';
@@ -1116,28 +1189,72 @@
         }
 
         // 导出任务数据
-        async function exportTask() {
+        async function exportTask(format = 'csv') {
             if (!currentTaskId) return;
             
             try {
-                const response = await fetch(`/api/v1/tasks/${currentTaskId}/export`);
-                const result = await response.json();
+                const response = await fetch(`/api/v1/tasks/${currentTaskId}/export?format=${format}`);
                 
-                if (result.success) {
+                if (response.ok) {
+                    // 获取文件名
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = `douyin_analysis_${currentTaskId}.${format}`;
+                    if (contentDisposition) {
+                        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                        if (filenameMatch) {
+                            filename = filenameMatch[1];
+                        }
+                    }
+                    
                     // 创建下载链接
-                    const dataStr = JSON.stringify(result.data, null, 2);
-                    const dataBlob = new Blob([dataStr], {type: 'application/json'});
-                    const url = URL.createObjectURL(dataBlob);
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = `douyin_analysis_${currentTaskId}.json`;
+                    link.download = filename;
                     link.click();
                     URL.revokeObjectURL(url);
                 } else {
-                    showError('导出失败: ' + result.error);
+                    const result = await response.json();
+                    showError('导出失败: ' + (result.error?.message || '未知错误'));
                 }
             } catch (error) {
                 showError('导出错误: ' + error.message);
+            }
+        }
+
+        // 下载视频文件
+        async function downloadVideo(taskId, videoId) {
+            try {
+                const response = await fetch(`/api/v1/tasks/${taskId}/videos/${videoId}/download`);
+                
+                if (response.ok) {
+                    // 获取文件名
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = `video_${videoId}.mp4`;
+                    if (contentDisposition) {
+                        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                        if (filenameMatch) {
+                            filename = filenameMatch[1];
+                        }
+                    }
+                    
+                    // 创建下载链接
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                    
+                    // 下载成功，不需要弹框提示
+                } else {
+                    const result = await response.json();
+                    showError('下载失败: ' + (result.error?.message || '未知错误'));
+                }
+            } catch (error) {
+                showError('下载失败: ' + error.message);
             }
         }
 
@@ -1166,12 +1283,154 @@
 
         function formatDate(dateString) {
             if (!dateString) return '未知';
-            const date = new Date(dateString);
-            return date.toLocaleString('zh-CN');
+            
+            // 如果时间字符串没有时区信息，假设它是东八区时间
+            let date;
+            if (dateString.includes('T') && !dateString.includes('+') && !dateString.includes('Z')) {
+                // 没有时区信息的ISO时间，假设是东八区时间
+                date = new Date(dateString + '+08:00');
+            } else {
+                date = new Date(dateString);
+            }
+            
+            // 使用东八区时间 (UTC+8)
+            return date.toLocaleString('zh-CN', {
+                timeZone: 'Asia/Shanghai',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
         }
 
         function showError(message) {
             alert('错误: ' + message);
+        }
+
+        // 显示Toast提示
+        function showToast(message, type = 'info') {
+            // 创建toast容器（如果不存在）
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 9999;
+                `;
+                document.body.appendChild(toastContainer);
+            }
+
+            // 创建toast元素
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#06b6d4';
+            const icon = type === 'success' ? 'bi-check-circle-fill' : type === 'error' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill';
+            
+            toast.style.cssText = `
+                background: ${bgColor};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 300px;
+            `;
+            
+            toast.innerHTML = `
+                <i class="bi ${icon}"></i>
+                <span>${message}</span>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // 显示动画
+            setTimeout(() => {
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // 自动隐藏
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // 复制转录文本
+        async function copyTranscript(videoId, text) {
+            const button = event.target.closest('.copy-btn');
+            const originalText = button.innerHTML;
+            
+            try {
+                await navigator.clipboard.writeText(text);
+                
+                // 显示复制成功状态
+                button.innerHTML = '<i class="bi bi-check-circle-fill"></i> 已复制';
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-success');
+                button.disabled = true;
+                
+                // 显示成功提示
+                showToast('文案已复制到剪贴板！', 'success');
+                
+                // 3秒后恢复原状
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-primary');
+                    button.disabled = false;
+                }, 3000);
+                
+            } catch (error) {
+                // 如果现代API不支持，使用传统方法
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    textArea.style.top = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    // 显示复制成功状态
+                    button.innerHTML = '<i class="bi bi-check-circle-fill"></i> 已复制';
+                    button.classList.remove('btn-primary');
+                    button.classList.add('btn-success');
+                    button.disabled = true;
+                    
+                    // 显示成功提示
+                    showToast('文案已复制到剪贴板！', 'success');
+                    
+                    // 3秒后恢复原状
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.classList.remove('btn-success');
+                        button.classList.add('btn-primary');
+                        button.disabled = false;
+                    }, 3000);
+                    
+                } catch (fallbackError) {
+                    showToast('复制失败，请手动选择文本复制', 'error');
+                }
+            }
         }
 
         // 显示删除确认模态框
@@ -1214,7 +1473,7 @@
         // 删除单个任务
         async function deleteTask(taskId) {
             try {
-                const response = await fetch(`/api/v1/tasks/${taskId}`, {
+                const response = await fetch(`/api/v1/tasks/${taskId}/delete`, {
                     method: 'DELETE'
                 });
                 const result = await response.json();
@@ -1223,7 +1482,18 @@
                     showMessage('任务删除成功', 'success');
                     loadTasks(); // 重新加载任务列表
                 } else {
-                    showError('删除失败: ' + result.error);
+                    // 正确处理错误对象
+                    let errorMessage = '删除失败';
+                    if (result.error) {
+                        if (typeof result.error === 'string') {
+                            errorMessage += ': ' + result.error;
+                        } else if (result.error.message) {
+                            errorMessage += ': ' + result.error.message;
+                        } else if (result.error.code) {
+                            errorMessage += ': ' + result.error.code;
+                        }
+                    }
+                    showError(errorMessage);
                 }
             } catch (error) {
                 showError('删除错误: ' + error.message);
@@ -1242,7 +1512,18 @@
                     showMessage(result.message, 'success');
                     loadTasks(); // 重新加载任务列表
                 } else {
-                    showError('清空失败: ' + result.error);
+                    // 正确处理错误对象
+                    let errorMessage = '清空失败';
+                    if (result.error) {
+                        if (typeof result.error === 'string') {
+                            errorMessage += ': ' + result.error;
+                        } else if (result.error.message) {
+                            errorMessage += ': ' + result.error.message;
+                        } else if (result.error.code) {
+                            errorMessage += ': ' + result.error.code;
+                        }
+                    }
+                    showError(errorMessage);
                 }
             } catch (error) {
                 showError('清空错误: ' + error.message);
@@ -1261,7 +1542,18 @@
                     showMessage(result.message, 'success');
                     loadTasks(); // 重新加载任务列表以更新统计
                 } else {
-                    showError('清除文件失败: ' + result.error);
+                    // 正确处理错误对象
+                    let errorMessage = '清除文件失败';
+                    if (result.error) {
+                        if (typeof result.error === 'string') {
+                            errorMessage += ': ' + result.error;
+                        } else if (result.error.message) {
+                            errorMessage += ': ' + result.error.message;
+                        } else if (result.error.code) {
+                            errorMessage += ': ' + result.error.code;
+                        }
+                    }
+                    showError(errorMessage);
                 }
             } catch (error) {
                 showError('清除文件错误: ' + error.message);
@@ -1272,12 +1564,22 @@
         function getDisplayName(url) {
             if (!url) return '未知用户';
             
-            // 如果是抖音用户链接，提取用户ID
+            // 如果是抖音用户链接，提取用户ID并生成友好名称
             if (url.includes('douyin.com/user/')) {
                 const parts = url.split('/user/');
                 if (parts.length > 1) {
                     const userId = parts[1].split('?')[0]; // 去掉查询参数
-                    return userId.length > 20 ? userId.substring(0, 20) + '...' : userId;
+                    // 生成友好的显示名称
+                    return `用户_${userId.substring(0, 8)}...`;
+                }
+            }
+            
+            // 如果是抖音视频链接
+            if (url.includes('douyin.com/video/')) {
+                const parts = url.split('/video/');
+                if (parts.length > 1) {
+                    const videoId = parts[1].split('?')[0];
+                    return `视频_${videoId.substring(0, 8)}...`;
                 }
             }
             

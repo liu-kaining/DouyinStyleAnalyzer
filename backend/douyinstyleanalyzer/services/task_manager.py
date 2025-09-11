@@ -123,17 +123,27 @@ class TaskManager:
                 # 获取cookies
                 scraper_cookies = scraper.cookies or []
                 
-                # 保存视频数据到数据库
-                for video_data in videos:
-                    video = VideoData.create_video(
-                        task_id=task.id,
-                        video_id=video_data["video_id"],
-                        title=video_data["title"],
-                        url=video_data["url"]
-                    )
-                    db.session.add(video)
+                # 实时保存视频数据到数据库
+                for i, video_data in enumerate(videos):
+                    try:
+                        video = VideoData.create_video(
+                            task_id=task.id,
+                            video_id=video_data["video_id"],
+                            title=video_data["title"],
+                            url=video_data["url"]
+                        )
+                        db.session.add(video)
+                        
+                        # 每10个视频提交一次，或者最后一个视频时提交
+                        if (i + 1) % 10 == 0 or i == len(videos) - 1:
+                            db.session.commit()
+                            print(f"💾 已保存 {i + 1}/{len(videos)} 个视频到数据库")
+                            
+                    except Exception as e:
+                        print(f"⚠️ 保存视频 {video_data.get('video_id')} 到数据库失败: {e}")
+                        db.session.rollback()
+                        continue
                 
-                db.session.commit()
                 print(f"✅ 视频采集完成: {len(videos)} 个视频")
                 return videos, scraper_cookies
                 
@@ -160,6 +170,27 @@ class TaskManager:
                     
                     print(f"🎬 处理视频 {i+1}/{len(videos)}: {video_id}")
                     
+                    # 获取数据库中的视频记录
+                    video_record = VideoData.query.filter_by(
+                        task_id=task.id,
+                        video_id=video_id
+                    ).first()
+                    
+                    if not video_record:
+                        print(f"⚠️ 未找到视频记录: {video_id}")
+                        failed_count += 1
+                        processed_count += 1
+                        task.update_progress(processed_count, success_count, failed_count)
+                        continue
+                    
+                    # 检查是否可以重试
+                    if video_record.processing_status == 'failed' and not video_record.can_retry():
+                        print(f"⏭️ 视频 {video_id} 已达到最大重试次数，跳过")
+                        failed_count += 1
+                        processed_count += 1
+                        task.update_progress(processed_count, success_count, failed_count)
+                        continue
+                    
                     # 转录音频
                     result = transcriber.process_video(
                         video_url, 
@@ -173,35 +204,61 @@ class TaskManager:
                     video_data["transcript_confidence"] = result.get("confidence", 0.0)
                     video_data["language_detected"] = result.get("language", task.language)
                     
-                    # 更新数据库中的视频记录
-                    video_record = VideoData.query.filter_by(
-                        task_id=task.id,
-                        video_id=video_id
-                    ).first()
-                    
-                    if video_record:
+                    # 实时更新数据库中的视频记录
+                    try:
                         if result.get("success"):
                             video_record.set_transcription_result(
                                 result["transcript"],
                                 result.get("confidence"),
                                 result.get("language")
                             )
+                            # 设置音频文件信息
+                            if result.get("video_file"):
+                                video_record.set_audio_info(
+                                    result["video_file"],
+                                    result.get("video_file_size", 0)
+                                )
+                            success_count += 1
+                            print(f"✅ 视频 {video_id} 处理成功")
+                        else:
+                            # 记录重试错误
+                            error_msg = result.get("error", "转录失败")
+                            video_record.add_retry_error(error_msg)
+                            video_record.update_status("failed", error_msg)
+                            failed_count += 1
+                            print(f"❌ 视频 {video_id} 处理失败: {error_msg}")
+                    except Exception as db_error:
+                        print(f"⚠️ 更新数据库记录失败: {db_error}")
+                        # 回滚数据库事务
+                        db.session.rollback()
+                        # 继续处理，不影响整体流程
+                        if result.get("success"):
                             success_count += 1
                         else:
-                            video_record.update_status("failed", result.get("error", "转录失败"))
                             failed_count += 1
                     
                     processed_count += 1
                     
-                    # 更新任务进度
+                    # 实时更新任务进度
                     task.update_progress(processed_count, success_count, failed_count)
                     
-                    # 清理音频文件
-                    if result.get("audio_file"):
-                        transcriber.cleanup_audio_file(result["audio_file"])
+                    # 不立即清理音频文件，保留供用户下载
+                    # 文件将在任务完成后统一清理或由用户手动清理
+                    # if result.get("video_file"):
+                    #     transcriber.cleanup_audio_file(result["video_file"])
                     
                 except Exception as e:
-                    print(f"⚠️ 视频 {video_data.get('video_id')} 处理失败: {e}")
+                    print(f"⚠️ 视频 {video_data.get('video_id')} 处理异常: {e}")
+                    
+                    # 记录异常到数据库
+                    try:
+                        if 'video_record' in locals() and video_record:
+                            video_record.add_retry_error(str(e))
+                            video_record.update_status("failed", str(e))
+                    except Exception as db_error:
+                        print(f"⚠️ 记录异常到数据库失败: {db_error}")
+                        db.session.rollback()
+                    
                     failed_count += 1
                     processed_count += 1
                     task.update_progress(processed_count, success_count, failed_count)

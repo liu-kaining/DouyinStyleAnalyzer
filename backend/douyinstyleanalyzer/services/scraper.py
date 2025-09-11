@@ -16,6 +16,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
 from ..config import Config
 from ..utils.validators import extract_user_id_from_url
+from ..utils.retry import retry_on_failure, RetryManager, RetryConfig
 
 
 class DouyinVideoScraper:
@@ -26,6 +27,15 @@ class DouyinVideoScraper:
         self.wait = None
         self.config = Config()
         self.cookies = cookies  # 用户登录态cookies
+        
+        # 初始化重试管理器
+        retry_config = RetryConfig(
+            max_retries=self.config.MAX_RETRY_COUNT,
+            base_delay=self.config.RETRY_DELAY_BASE,
+            max_delay=self.config.RETRY_DELAY_MAX,
+            backoff_factor=self.config.RETRY_BACKOFF_FACTOR
+        )
+        self.retry_manager = RetryManager(retry_config)
     
     def _setup_driver(self):
         """设置浏览器驱动"""
@@ -266,10 +276,8 @@ class DouyinVideoScraper:
     
     def scrape_videos(self, user_url: str, max_videos: int = 50) -> List[Dict]:
         """采集用户视频列表"""
-        try:
+        def _scrape_videos_internal():
             print(f"📹 开始采集视频: {user_url}")
-            
-            # 始终进行真实的视频采集
             
             # 访问用户主页
             self.driver.get(user_url)
@@ -342,9 +350,12 @@ class DouyinVideoScraper:
                 print(f"⚠️ 获取cookies失败: {e}")
             
             return videos
-            
+        
+        # 使用重试机制执行采集
+        try:
+            return self.retry_manager.retry(_scrape_videos_internal)
         except Exception as e:
-            print(f"❌ 视频采集失败: {e}")
+            print(f"❌ 视频采集失败（已重试 {self.config.MAX_RETRY_COUNT} 次）: {e}")
             return []
     
     def _find_video_elements(self) -> List:
@@ -479,7 +490,7 @@ class DouyinVideoScraper:
                     
                     for title_element in title_elements:
                         text = title_element.text.strip()
-                        title_attr = title_element.get_attribute("title", "").strip()
+                        title_attr = title_element.get_attribute("title").strip() if title_element.get_attribute("title") else ""
                         
                         # 优先使用title属性，然后是文本内容
                         if title_attr and len(title_attr) > 5:

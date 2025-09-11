@@ -38,6 +38,12 @@ class Config:
     TASK_TIMEOUT = int(os.environ.get('TASK_TIMEOUT', 3600))  # 1小时
     CLEANUP_INTERVAL = int(os.environ.get('CLEANUP_INTERVAL', 86400))  # 24小时
     
+    # 重试配置
+    MAX_RETRY_COUNT = int(os.environ.get('MAX_RETRY_COUNT', 10))  # 最大重试次数
+    RETRY_DELAY_BASE = int(os.environ.get('RETRY_DELAY_BASE', 2))  # 基础延迟时间（秒）
+    RETRY_DELAY_MAX = int(os.environ.get('RETRY_DELAY_MAX', 60))  # 最大延迟时间（秒）
+    RETRY_BACKOFF_FACTOR = float(os.environ.get('RETRY_BACKOFF_FACTOR', 2.0))  # 退避因子
+    
     # 用户配额配置
     DEFAULT_QUOTA = int(os.environ.get('DEFAULT_QUOTA', 100))
     PREMIUM_QUOTA = int(os.environ.get('PREMIUM_QUOTA', 1000))

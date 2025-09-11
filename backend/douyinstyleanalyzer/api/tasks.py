@@ -431,7 +431,7 @@ def get_task_preview(user, task_id):
 @tasks_bp.route('/<task_id>/export', methods=['GET'])
 @require_auth
 def export_task_data(user, task_id):
-    """导出任务数据（包含视频详情）"""
+    """导出任务数据（支持CSV和PDF格式）"""
     try:
         task = AnalysisTask.query.filter_by(id=task_id, user_id=user.id).first()
         
@@ -447,23 +447,21 @@ def export_task_data(user, task_id):
         # 获取视频数据
         videos = VideoData.query.filter_by(task_id=task_id).all()
         
-        # 构建导出数据
-        export_data = {
-            'task_info': task.to_dict(),
-            'videos': [video.to_dict() for video in videos],
-            'summary': {
-                'total_videos': len(videos),
-                'successful_videos': len([v for v in videos if v.transcription_completed]),
-                'failed_videos': len([v for v in videos if v.processing_status == 'failed']),
-                'total_transcript_length': sum(len(v.transcript or '') for v in videos),
-                'export_time': datetime.utcnow().isoformat()
-            }
-        }
+        # 获取导出格式
+        export_format = request.args.get('format', 'csv').lower()
         
-        return jsonify({
-            'success': True,
-            'data': export_data
-        }), 200
+        if export_format == 'csv':
+            return export_to_csv(task, videos)
+        elif export_format == 'pdf':
+            return export_to_pdf(task, videos)
+        else:
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 'INVALID_FORMAT',
+                    'message': '不支持的导出格式'
+                }
+            }), 400
         
     except Exception as e:
         return jsonify({
@@ -474,7 +472,7 @@ def export_task_data(user, task_id):
             }
         }), 500
 
-@tasks_bp.route('/<task_id>', methods=['DELETE'])
+@tasks_bp.route('/<task_id>/delete', methods=['DELETE'])
 @require_auth
 def delete_task(user, task_id):
     """删除单个任务"""
@@ -492,6 +490,18 @@ def delete_task(user, task_id):
         
         # 删除相关的视频数据
         VideoData.query.filter_by(task_id=task_id).delete()
+        
+        # 删除对应的输出文件
+        if task.result_file:
+            from ..config import Config
+            import os
+            output_file_path = os.path.join(Config.OUTPUT_DIR, task.result_file)
+            if os.path.exists(output_file_path):
+                try:
+                    os.remove(output_file_path)
+                    print(f"删除任务输出文件: {output_file_path}")
+                except Exception as e:
+                    print(f"删除输出文件失败 {output_file_path}: {e}")
         
         # 删除任务
         db.session.delete(task)
@@ -526,9 +536,24 @@ def clear_all_tasks(user):
                 'message': '没有任务需要清空'
             }), 200
         
-        # 删除所有相关的视频数据
+        # 删除所有相关的视频数据和输出文件
+        deleted_files = 0
         for task in tasks:
+            # 删除相关的视频数据
             VideoData.query.filter_by(task_id=task.id).delete()
+            
+            # 删除对应的输出文件
+            if task.result_file:
+                from ..config import Config
+                import os
+                output_file_path = os.path.join(Config.OUTPUT_DIR, task.result_file)
+                if os.path.exists(output_file_path):
+                    try:
+                        os.remove(output_file_path)
+                        deleted_files += 1
+                        print(f"删除任务输出文件: {output_file_path}")
+                    except Exception as e:
+                        print(f"删除输出文件失败 {output_file_path}: {e}")
         
         # 删除所有任务
         for task in tasks:
@@ -548,5 +573,344 @@ def clear_all_tasks(user):
             'error': {
                 'code': 'CLEAR_ERROR',
                 'message': f'清空失败: {str(e)}'
+            }
+        }), 500
+
+@tasks_bp.route('/<task_id>/videos/<video_id>/download', methods=['GET'])
+@require_auth
+def download_video(user, task_id, video_id):
+    """下载视频文件"""
+    try:
+        # 验证任务是否存在且属于当前用户
+        task = AnalysisTask.query.filter_by(id=task_id, user_id=user.id).first()
+        if not task:
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 'TASK_NOT_FOUND',
+                    'message': '任务不存在'
+                }
+            }), 404
+        
+        # 查找视频记录
+        video_record = VideoData.query.filter_by(
+            task_id=task_id, 
+            video_id=video_id
+        ).first()
+        
+        if not video_record:
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 'VIDEO_NOT_FOUND',
+                    'message': '视频不存在'
+                }
+            }), 404
+        
+        # 检查视频文件是否存在
+        if not video_record.audio_file_path or not os.path.exists(video_record.audio_file_path):
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 'FILE_NOT_FOUND',
+                    'message': '视频文件不存在或已被清理'
+                }
+            }), 404
+        
+        # 生成下载文件名
+        safe_title = "".join(c for c in video_record.title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        if not safe_title or safe_title == "视频":
+            safe_title = f"video_{video_id}"
+        
+        download_filename = f"{safe_title}_{video_id}.mp4"
+        
+        # 返回文件下载
+        return send_from_directory(
+            directory=os.path.dirname(video_record.audio_file_path),
+            path=os.path.basename(video_record.audio_file_path),
+            as_attachment=True,
+            download_name=download_filename
+        )
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': {
+                'code': 'DOWNLOAD_ERROR',
+                'message': f'下载失败: {str(e)}'
+            }
+        }), 500
+
+def export_to_csv(task, videos):
+    """导出为CSV格式"""
+    import csv
+    import io
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # 写入标题行
+    writer.writerow([
+        '视频ID', '标题', 'URL', '处理状态', '转录完成', 
+        '置信度', '转录文本', '音频文件大小', '创建时间'
+    ])
+    
+    # 写入数据行
+    for video in videos:
+        writer.writerow([
+            video.video_id,
+            video.title or '',
+            video.url or '',
+            video.processing_status or '',
+            '是' if video.transcription_completed else '否',
+            f"{video.transcript_confidence * 100:.1f}%" if video.transcript_confidence else '',
+            video.transcript or '',
+            f"{video.audio_file_size} bytes" if video.audio_file_size else '',
+            video.created_at.strftime('%Y-%m-%d %H:%M:%S') if video.created_at else ''
+        ])
+    
+    # 准备响应
+    csv_content = output.getvalue()
+    output.close()
+    
+    # 生成文件名 - 使用东八区时间
+    from datetime import timezone, timedelta
+    china_tz = timezone(timedelta(hours=8))
+    china_time = datetime.now(china_tz)
+    filename = f"douyin_analysis_{task.id}_{china_time.strftime('%Y%m%d_%H%M%S')}.csv"
+    
+    from flask import Response
+    response = Response(
+        csv_content,
+        mimetype='text/csv',
+        headers={
+            'Content-Disposition': f'attachment; filename="{filename}"',
+            'Content-Type': 'text/csv; charset=utf-8'
+        }
+    )
+    
+    return response
+
+def export_to_pdf(task, videos):
+    """导出为PDF格式 - 支持中文，逐个视频显示"""
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+        from reportlab.lib.units import inch
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        import io
+        import time
+        import os
+        
+        start_time = time.time()
+        
+        # 创建PDF文档
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer, 
+            pagesize=A4, 
+            topMargin=0.8*inch, 
+            bottomMargin=0.8*inch,
+            leftMargin=0.8*inch,
+            rightMargin=0.8*inch
+        )
+        
+        # 注册中文字体 - 使用系统默认字体
+        try:
+            # 尝试注册系统中文字体
+            if os.path.exists('/System/Library/Fonts/PingFang.ttc'):
+                pdfmetrics.registerFont(TTFont('PingFang', '/System/Library/Fonts/PingFang.ttc'))
+                chinese_font = 'PingFang'
+            elif os.path.exists('/System/Library/Fonts/STHeiti Light.ttc'):
+                pdfmetrics.registerFont(TTFont('STHeiti', '/System/Library/Fonts/STHeiti Light.ttc'))
+                chinese_font = 'STHeiti'
+            else:
+                # 使用默认字体，但设置编码
+                chinese_font = 'Helvetica'
+        except:
+            chinese_font = 'Helvetica'
+        
+        # 创建自定义样式
+        styles = getSampleStyleSheet()
+        
+        # 标题样式
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontName=chinese_font,
+            fontSize=20,
+            spaceAfter=30,
+            alignment=1,  # 居中
+            textColor=colors.darkblue,
+            leading=24
+        )
+        
+        # 章节标题样式
+        section_style = ParagraphStyle(
+            'SectionTitle',
+            parent=styles['Heading2'],
+            fontName=chinese_font,
+            fontSize=14,
+            spaceAfter=12,
+            spaceBefore=20,
+            textColor=colors.darkblue,
+            leading=18
+        )
+        
+        # 视频标题样式
+        video_title_style = ParagraphStyle(
+            'VideoTitle',
+            parent=styles['Heading3'],
+            fontName=chinese_font,
+            fontSize=12,
+            spaceAfter=8,
+            spaceBefore=15,
+            textColor=colors.darkgreen,
+            leading=16
+        )
+        
+        # 正文样式
+        normal_style = ParagraphStyle(
+            'ChineseNormal',
+            parent=styles['Normal'],
+            fontName=chinese_font,
+            fontSize=10,
+            spaceAfter=6,
+            leading=14
+        )
+        
+        # 转录文本样式
+        transcript_style = ParagraphStyle(
+            'Transcript',
+            parent=styles['Normal'],
+            fontName=chinese_font,
+            fontSize=10,
+            spaceAfter=8,
+            spaceBefore=8,
+            leftIndent=20,
+            rightIndent=20,
+            leading=16,
+            backColor=colors.lightgrey,
+            borderColor=colors.grey,
+            borderWidth=1,
+            borderPadding=8
+        )
+        
+        # 构建PDF内容
+        story = []
+        
+        # 标题
+        story.append(Paragraph("抖音视频分析报告", title_style))
+        story.append(Spacer(1, 20))
+        
+        # 任务信息
+        story.append(Paragraph("任务信息", section_style))
+        story.append(Paragraph(f"<b>任务ID:</b> {task.id}", normal_style))
+        story.append(Paragraph(f"<b>目标URL:</b> {task.target_url}", normal_style))
+        story.append(Paragraph(f"<b>创建时间:</b> {task.created_at.strftime('%Y-%m-%d %H:%M:%S')}", normal_style))
+        story.append(Paragraph(f"<b>总视频数:</b> {len(videos)}", normal_style))
+        story.append(Spacer(1, 20))
+        
+        # 逐个显示视频信息
+        if videos:
+            story.append(Paragraph("视频详情", section_style))
+            
+            for i, video in enumerate(videos, 1):
+                # 每5个视频分页，避免页面过长
+                if i > 1 and (i - 1) % 5 == 0:
+                    story.append(PageBreak())
+                    story.append(Paragraph(f"视频详情 (第 {((i-1)//5) + 1} 页)", section_style))
+                
+                # 视频标题
+                video_title = f"视频 {i}: {video.video_id}"
+                story.append(Paragraph(video_title, video_title_style))
+                
+                # 视频基本信息
+                story.append(Paragraph(f"<b>视频ID:</b> {video.video_id}", normal_style))
+                story.append(Paragraph(f"<b>标题:</b> {video.title or '无标题'}", normal_style))
+                story.append(Paragraph(f"<b>状态:</b> {video.processing_status or '未知'}", normal_style))
+                
+                if video.transcript_confidence:
+                    story.append(Paragraph(f"<b>转录置信度:</b> {video.transcript_confidence * 100:.1f}%", normal_style))
+                
+                if video.language_detected:
+                    story.append(Paragraph(f"<b>检测语言:</b> {video.language_detected}", normal_style))
+                
+                if video.duration:
+                    story.append(Paragraph(f"<b>视频时长:</b> {video.duration}秒", normal_style))
+                
+                # 转录文本
+                if video.transcript:
+                    story.append(Paragraph("<b>转录文本:</b>", normal_style))
+                    # 处理长文本，自动换行
+                    transcript_text = video.transcript.replace('\n', '<br/>')
+                    story.append(Paragraph(transcript_text, transcript_style))
+                else:
+                    story.append(Paragraph("<b>转录文本:</b> 无转录内容", normal_style))
+                
+                # 添加分隔线
+                if i < len(videos):
+                    story.append(Spacer(1, 10))
+                    story.append(Paragraph("─" * 50, normal_style))
+                    story.append(Spacer(1, 10))
+        
+        # 添加统计信息
+        story.append(Spacer(1, 20))
+        story.append(Paragraph("统计信息", section_style))
+        
+        success_count = sum(1 for v in videos if v.processing_status == 'completed')
+        failed_count = sum(1 for v in videos if v.processing_status == 'failed')
+        transcribed_count = sum(1 for v in videos if v.transcription_completed)
+        
+        story.append(Paragraph(f"<b>总视频数:</b> {len(videos)}", normal_style))
+        story.append(Paragraph(f"<b>成功处理:</b> {success_count}", normal_style))
+        story.append(Paragraph(f"<b>处理失败:</b> {failed_count}", normal_style))
+        story.append(Paragraph(f"<b>已转录:</b> {transcribed_count}", normal_style))
+        
+        # 添加生成时间信息
+        story.append(Spacer(1, 20))
+        generation_time = time.time() - start_time
+        # 使用东八区时间
+        from datetime import timezone, timedelta
+        china_tz = timezone(timedelta(hours=8))
+        china_time = datetime.now(china_tz)
+        story.append(Paragraph(f"<i>报告生成时间: {china_time.strftime('%Y-%m-%d %H:%M:%S')} (耗时: {generation_time:.2f}秒)</i>", normal_style))
+        
+        # 生成PDF
+        doc.build(story)
+        buffer.seek(0)
+        
+        # 生成文件名
+        filename = f"douyin_analysis_{task.id}_{china_time.strftime('%Y%m%d_%H%M%S')}.pdf"
+        
+        from flask import Response
+        response = Response(
+            buffer.getvalue(),
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"',
+                'Content-Length': str(len(buffer.getvalue()))
+            }
+        )
+        
+        return response
+        
+    except ImportError:
+        return jsonify({
+            'success': False,
+            'error': {
+                'code': 'PDF_LIBRARY_MISSING',
+                'message': 'PDF导出功能需要安装reportlab库'
+            }
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': {
+                'code': 'PDF_GENERATION_ERROR',
+                'message': f'PDF生成失败: {str(e)}'
             }
         }), 500

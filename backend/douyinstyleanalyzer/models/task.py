@@ -3,9 +3,16 @@
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from enum import Enum
 from .. import db
+
+# 东八区时区
+CHINA_TZ = timezone(timedelta(hours=8))
+
+def china_now():
+    """获取东八区当前时间"""
+    return datetime.now(CHINA_TZ)
 
 
 class TaskStatus(Enum):
@@ -56,10 +63,10 @@ class AnalysisTask(db.Model):
     videos_failed = db.Column(db.Integer, default=0, nullable=False)
     
     # 时间信息
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=china_now, nullable=False, index=True)
     started_at = db.Column(db.DateTime, nullable=True)
     completed_at = db.Column(db.DateTime, nullable=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=china_now, onupdate=china_now)
     
     # 结果信息
     result_file = db.Column(db.String(255), nullable=True)
@@ -74,6 +81,15 @@ class AnalysisTask(db.Model):
     
     def to_dict(self):
         """转换为字典"""
+        def format_time_with_tz(dt):
+            """格式化时间，确保包含时区信息"""
+            if not dt:
+                return None
+            # 如果没有时区信息，假设是东八区时间
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=CHINA_TZ)
+            return dt.isoformat()
+        
         return {
             'id': self.id,
             'user_id': self.user_id,
@@ -90,10 +106,10 @@ class AnalysisTask(db.Model):
             'videos_processed': self.videos_processed,
             'videos_success': self.videos_success,
             'videos_failed': self.videos_failed,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'started_at': self.started_at.isoformat() if self.started_at else None,
-            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'created_at': format_time_with_tz(self.created_at),
+            'started_at': format_time_with_tz(self.started_at),
+            'completed_at': format_time_with_tz(self.completed_at),
+            'updated_at': format_time_with_tz(self.updated_at),
             'result_file': self.result_file,
             'error_message': self.error_message,
             'estimated_remaining': self.estimated_remaining
@@ -111,11 +127,11 @@ class AnalysisTask(db.Model):
         
         # 更新时间戳
         if status == TaskStatus.RUNNING and not self.started_at:
-            self.started_at = datetime.utcnow()
+            self.started_at = china_now()
         elif status in [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED]:
-            self.completed_at = datetime.utcnow()
+            self.completed_at = china_now()
         
-        self.updated_at = datetime.utcnow()
+        self.updated_at = china_now()
         db.session.commit()
     
     def update_progress(self, videos_processed, videos_success, videos_failed):
@@ -129,18 +145,18 @@ class AnalysisTask(db.Model):
         
         # 计算预计剩余时间
         if self.started_at and videos_processed > 0:
-            elapsed = (datetime.utcnow() - self.started_at).total_seconds()
+            elapsed = (china_now() - self.started_at).total_seconds()
             avg_time_per_video = elapsed / videos_processed
             remaining_videos = self.total_videos - videos_processed
             self.estimated_remaining = int(avg_time_per_video * remaining_videos)
         
-        self.updated_at = datetime.utcnow()
+        self.updated_at = china_now()
         db.session.commit()
     
     def set_result_file(self, filename):
         """设置结果文件"""
         self.result_file = filename
-        self.updated_at = datetime.utcnow()
+        self.updated_at = china_now()
         db.session.commit()
     
     @classmethod

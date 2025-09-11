@@ -196,16 +196,41 @@ def clear_downloaded_files():
         
         # 方法1：删除audio目录下的所有文件
         audio_dir = Config.AUDIO_DIR
-        audio_files = glob.glob(os.path.join(audio_dir, '*.m4a'))
+        # 支持多种音频/视频格式
+        audio_patterns = ['*.m4a', '*.mp4', '*.mp3', '*.webm', '*.ogg', '*.wav']
         deleted_count = 0
         
-        for file_path in audio_files:
+        for pattern in audio_patterns:
+            audio_files = glob.glob(os.path.join(audio_dir, pattern))
+            for file_path in audio_files:
+                try:
+                    os.remove(file_path)
+                    deleted_count += 1
+                    print(f"删除文件: {file_path}")
+                except Exception as e:
+                    print(f"删除文件失败 {file_path}: {e}")
+        
+        # 删除cookies临时文件
+        temp_dir = Config.TEMP_DIR
+        cookie_files = glob.glob(os.path.join(temp_dir, 'cookies_*.txt'))
+        for file_path in cookie_files:
             try:
                 os.remove(file_path)
                 deleted_count += 1
-                print(f"删除文件: {file_path}")
+                print(f"删除cookies文件: {file_path}")
             except Exception as e:
-                print(f"删除文件失败 {file_path}: {e}")
+                print(f"删除cookies文件失败 {file_path}: {e}")
+        
+        # 删除output目录下的所有JSON文件
+        output_dir = Config.OUTPUT_DIR
+        output_files = glob.glob(os.path.join(output_dir, '*.json'))
+        for file_path in output_files:
+            try:
+                os.remove(file_path)
+                deleted_count += 1
+                print(f"删除输出文件: {file_path}")
+            except Exception as e:
+                print(f"删除输出文件失败 {file_path}: {e}")
         
         # 方法2：更新数据库中的记录
         downloaded_videos = VideoData.query.filter_by(audio_downloaded=True).all()
