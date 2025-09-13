@@ -2,7 +2,7 @@
 用户模型
 """
 
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from .. import db
 
@@ -29,9 +29,9 @@ class User(db.Model):
     quota_total = db.Column(db.Integer, default=100, nullable=False)
     
     # 时间戳
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone(timedelta(hours=8))), nullable=False)
     last_login = db.Column(db.DateTime, nullable=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone(timedelta(hours=8))), onupdate=lambda: datetime.now(timezone(timedelta(hours=8))))
     
     # 关联关系
     tasks = db.relationship('AnalysisTask', backref='user', lazy='dynamic', cascade='all, delete-orphan')
@@ -79,7 +79,7 @@ class User(db.Model):
     
     def update_last_login(self):
         """更新最后登录时间"""
-        self.last_login = datetime.utcnow()
+        self.last_login = datetime.now(timezone(timedelta(hours=8)))
         db.session.commit()
     
     def consume_quota(self, amount=1):

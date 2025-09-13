@@ -3,7 +3,7 @@
 """
 
 from flask import Blueprint, jsonify
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from ..models import User, AnalysisTask, TaskStatus
 from .. import db
 from ..services.auth.jwt_service import JWTService
@@ -82,11 +82,11 @@ def get_system_status():
         cpu_percent = psutil.cpu_percent(interval=1)
         memory = psutil.virtual_memory()
         
-        # 获取视频统计
+        # 获取视频统计（去重后）
         from ..models import VideoData
-        total_videos = VideoData.query.count()
-        downloaded_videos = VideoData.get_downloaded_count()
-        transcribed_videos = VideoData.get_transcribed_count()
+        total_videos = VideoData.get_unique_video_count()
+        downloaded_videos = VideoData.get_unique_downloaded_count()
+        transcribed_videos = VideoData.get_unique_transcribed_count()
         
         return jsonify({
             'success': True,
@@ -111,7 +111,7 @@ def get_system_status():
                     'downloaded_videos': downloaded_videos,
                     'transcribed_videos': transcribed_videos
                 },
-                'last_updated': datetime.utcnow().isoformat()
+                'last_updated': datetime.now(timezone(timedelta(hours=8))).isoformat()
             }
         }), 200
         
@@ -145,7 +145,7 @@ def health_check():
             'services': {
                 'database': db_status
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone(timedelta(hours=8))).isoformat()
         }
     }), 200 if overall_status == 'healthy' else 503
 
@@ -170,7 +170,7 @@ def get_system_info():
                     'default_quota': Config.DEFAULT_QUOTA,
                     'premium_quota': Config.PREMIUM_QUOTA
                 },
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone(timedelta(hours=8))).isoformat()
             }
         }), 200
         

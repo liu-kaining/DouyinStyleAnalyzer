@@ -61,6 +61,27 @@ class VideoData(db.Model):
         return cls.query.filter_by(url=video_url).first()
     
     @classmethod
+    def get_video_by_id(cls, video_id):
+        """根据视频ID查找已存在的视频记录"""
+        return cls.query.filter_by(video_id=video_id).first()
+    
+    @classmethod
+    def get_analyzed_video_ids_by_blogger(cls, blogger_url):
+        """获取指定博主已分析的视频ID列表"""
+        from .task import AnalysisTask
+        # 查找该博主的所有任务
+        tasks = AnalysisTask.query.filter_by(target_url=blogger_url).all()
+        task_ids = [task.id for task in tasks]
+        
+        # 获取这些任务中已分析的视频ID
+        analyzed_videos = cls.query.filter(
+            cls.task_id.in_(task_ids),
+            cls.processing_status == 'completed'
+        ).all()
+        
+        return [video.video_id for video in analyzed_videos]
+    
+    @classmethod
     def get_downloaded_count(cls):
         """获取已下载的视频数量"""
         return cls.query.filter_by(audio_downloaded=True).count()
@@ -69,6 +90,24 @@ class VideoData(db.Model):
     def get_transcribed_count(cls):
         """获取已转录的视频数量"""
         return cls.query.filter_by(transcription_completed=True).count()
+    
+    @classmethod
+    def get_unique_video_count(cls):
+        """获取去重后的视频数量（按video_id去重）"""
+        from sqlalchemy import func
+        return db.session.query(func.count(func.distinct(cls.video_id))).scalar()
+    
+    @classmethod
+    def get_unique_downloaded_count(cls):
+        """获取去重后已下载的视频数量"""
+        from sqlalchemy import func
+        return db.session.query(func.count(func.distinct(cls.video_id))).filter_by(audio_downloaded=True).scalar()
+    
+    @classmethod
+    def get_unique_transcribed_count(cls):
+        """获取去重后已转录的视频数量"""
+        from sqlalchemy import func
+        return db.session.query(func.count(func.distinct(cls.video_id))).filter_by(transcription_completed=True).scalar()
     
     @classmethod
     def clear_all_downloaded_files(cls):

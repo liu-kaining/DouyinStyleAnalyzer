@@ -279,6 +279,11 @@ class DouyinVideoScraper:
         def _scrape_videos_internal():
             print(f"📹 开始采集视频: {user_url}")
             
+            # 获取该博主已分析的视频ID列表
+            from ..models.video import VideoData
+            analyzed_video_ids = set(VideoData.get_analyzed_video_ids_by_blogger(user_url))
+            print(f"📋 该博主已分析 {len(analyzed_video_ids)} 个视频，将跳过重复分析")
+            
             # 访问用户主页
             self.driver.get(user_url)
             time.sleep(5)
@@ -290,6 +295,7 @@ class DouyinVideoScraper:
                 print("⚠️ 页面加载超时")
             
             videos = []
+            skipped_count = 0
             last_height = self.driver.execute_script("return document.body.scrollHeight")
             scroll_count = 0
             
@@ -307,15 +313,14 @@ class DouyinVideoScraper:
                     try:
                         video_data = self._extract_video_data(element)
                         if video_data and not self._is_duplicate(video_data, videos):
-                            # 检查是否已经处理过这个视频（数据库去重）
-                            from ..models.video import VideoData
-                            existing_video = VideoData.get_video_by_url(video_data['url'])
-                            if existing_video:
-                                print(f"⏭️ 跳过已处理的视频: {video_data['video_id']}")
+                            # 检查是否已经分析过这个视频（按博主分组去重）
+                            if video_data['video_id'] in analyzed_video_ids:
+                                print(f"⏭️ 跳过已分析的视频: {video_data['video_id']}")
+                                skipped_count += 1
                                 continue
                             
                             videos.append(video_data)
-                            print(f"✅ 采集到视频: {video_data['title'][:50]}...")
+                            print(f"✅ 采集到新视频: {video_data['title'][:50]}...")
                             
                             if len(videos) >= max_videos:
                                 break
@@ -333,9 +338,9 @@ class DouyinVideoScraper:
                 last_height = new_height
                 scroll_count += 1
                 
-                print(f"📊 已采集 {len(videos)} 个视频，滚动次数: {scroll_count}")
+                print(f"📊 已采集 {len(videos)} 个新视频，跳过 {skipped_count} 个已分析视频，滚动次数: {scroll_count}")
             
-            print(f"🎉 采集完成，共获得 {len(videos)} 个视频")
+            print(f"🎉 采集完成，共获得 {len(videos)} 个新视频，跳过 {skipped_count} 个已分析视频")
             
             # 在返回前获取最新的cookies
             try:

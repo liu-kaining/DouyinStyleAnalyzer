@@ -6,7 +6,7 @@ import os
 import json
 import time
 import threading
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional
 from ..models import AnalysisTask, VideoData, TaskStatus, TaskStep
 from .. import db
@@ -34,7 +34,7 @@ class TaskManager:
                 # 标记任务为运行中
                 self.running_tasks[task_id] = {
                     "thread": None,
-                    "start_time": datetime.utcnow(),
+                    "start_time": datetime.now(timezone(timedelta(hours=8))),
                     "cookies": cookies
                 }
                 
@@ -144,7 +144,12 @@ class TaskManager:
                         db.session.rollback()
                         continue
                 
-                print(f"✅ 视频采集完成: {len(videos)} 个视频")
+                # 更新任务统计信息
+                task.total_videos = len(videos)
+                task.update_progress(0, 0, 0)  # 重置进度
+                db.session.commit()
+                
+                print(f"✅ 视频采集完成: {len(videos)} 个新视频")
                 return videos, scraper_cookies
                 
         except Exception as e:
@@ -292,7 +297,7 @@ class TaskManager:
                     "target_url": task.target_url,
                     "target_username": task.target_username,
                     "created_at": task.created_at.isoformat(),
-                    "completed_at": datetime.utcnow().isoformat(),
+                    "completed_at": datetime.now(timezone(timedelta(hours=8))).isoformat(),
                     "total_videos": len(videos),
                     "whisper_model": task.whisper_model,
                     "language": task.language

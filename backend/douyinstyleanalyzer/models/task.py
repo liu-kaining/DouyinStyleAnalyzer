@@ -145,7 +145,11 @@ class AnalysisTask(db.Model):
         
         # 计算预计剩余时间
         if self.started_at and videos_processed > 0:
-            elapsed = (china_now() - self.started_at).total_seconds()
+            # 确保started_at有时区信息
+            started_at_with_tz = self.started_at
+            if started_at_with_tz.tzinfo is None:
+                started_at_with_tz = started_at_with_tz.replace(tzinfo=CHINA_TZ)
+            elapsed = (china_now() - started_at_with_tz).total_seconds()
             avg_time_per_video = elapsed / videos_processed
             remaining_videos = self.total_videos - videos_processed
             self.estimated_remaining = int(avg_time_per_video * remaining_videos)
