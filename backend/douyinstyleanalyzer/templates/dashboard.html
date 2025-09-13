@@ -470,6 +470,26 @@
             overflow: hidden;
         }
 
+        /* 任务详情模态框特殊样式 */
+        #taskDetailModal .modal-dialog {
+            max-width: 95vw;
+            width: 95vw;
+        }
+
+        @media (min-width: 1200px) {
+            #taskDetailModal .modal-dialog {
+                max-width: 90vw;
+                width: 90vw;
+            }
+        }
+
+        @media (min-width: 1400px) {
+            #taskDetailModal .modal-dialog {
+                max-width: 85vw;
+                width: 85vw;
+            }
+        }
+
         .modern-modal .modal-header {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
@@ -507,6 +527,8 @@
         .task-detail-content {
             display: grid;
             gap: 2rem;
+            max-width: 100%;
+            overflow-x: auto;
         }
 
         .detail-section {
@@ -526,6 +548,149 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+        }
+        
+        /* 分析报告样式 */
+        .analysis-report {
+            display: grid;
+            gap: 1.5rem;
+        }
+        
+        .analysis-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            padding: 1.25rem;
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+        
+        .analysis-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .analysis-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .analysis-title::before {
+            content: "📊";
+            font-size: 1.2rem;
+        }
+        
+        .analysis-content {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        /* Markdown内容样式 */
+        .markdown-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3,
+        .markdown-content h4,
+        .markdown-content h5,
+        .markdown-content h6 {
+            color: var(--primary-color);
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .markdown-content h1 {
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.3rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3rem;
+        }
+
+        .markdown-content h3 {
+            font-size: 1.1rem;
+        }
+
+        .markdown-content p {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .markdown-content strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .markdown-content em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .markdown-content code {
+            background: var(--light-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.2rem 0.4rem;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9em;
+            color: var(--primary-color);
+        }
+
+        .markdown-content pre {
+            background: var(--light-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .markdown-content pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        .markdown-content ul,
+        .markdown-content ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+
+        .markdown-content li {
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid var(--primary-color);
+            background: var(--light-bg);
+            margin: 1rem 0;
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            color: var(--text-secondary);
         }
 
         .detail-grid {
@@ -783,6 +948,33 @@
                 gap: 0.5rem;
             }
         }
+
+        /* 禁用按钮样式 */
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 任务名称样式 */
+        .detail-item .detail-value {
+            font-weight: 500;
+        }
+
+        /* 旋转动画 */
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -920,7 +1112,7 @@
 
     <!-- 任务详情模态框 -->
     <div class="modal fade" id="taskDetailModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
             <div class="modal-content modern-modal">
                 <div class="modal-header">
                     <h5 class="modal-title">任务详情</h5>
@@ -1068,6 +1260,9 @@
         function displayTasks(tasks) {
             const tasksList = document.getElementById('tasksList');
             
+            // 更新统计信息
+            updateTaskStats(tasks);
+            
             if (tasks.length === 0) {
                 tasksList.innerHTML = `
                     <div class="empty-state">
@@ -1089,7 +1284,7 @@
                                     ${getStatusText(task.status)}
                                 </span>
                                 <h6 class="task-name" title="${task.target_url}">
-                                    ${getDisplayName(task.target_url)}
+                                    ${task.name || '未知博主'}
                                 </h6>
                             </div>
                             <div class="task-meta">
@@ -1139,17 +1334,41 @@
             tasksList.innerHTML = tasksHtml;
         }
 
+        // 更新任务统计信息
+        function updateTaskStats(tasks) {
+            const totalTasks = tasks.length;
+            const runningTasks = tasks.filter(task => task.status === 'running' || task.status === 'pending').length;
+            const completedTasks = tasks.filter(task => task.status === 'completed').length;
+            
+            // 更新统计数字
+            document.getElementById('totalTasks').textContent = totalTasks;
+            document.getElementById('runningTasks').textContent = runningTasks;
+            document.getElementById('completedTasks').textContent = completedTasks;
+        }
+
         // 显示任务详情
         async function showTaskDetail(taskId) {
             currentTaskId = taskId;
+            
+            // 显示加载状态
+            const modal = new bootstrap.Modal(document.getElementById('taskDetailModal'));
+            const modalBody = document.getElementById('taskDetailContent');
+            modalBody.innerHTML = `
+                <div class="loading-state">
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                    </div>
+                    <p>正在加载任务详情...</p>
+                </div>
+            `;
+            modal.show();
+            
             try {
                 const response = await fetch(`/api/v1/tasks/${taskId}`);
                 const result = await response.json();
                 
                 if (result.success) {
                     displayTaskDetail(result.data);
-                    const modal = new bootstrap.Modal(document.getElementById('taskDetailModal'));
-                    modal.show();
                 } else {
                     // 正确处理错误对象
                     let errorMessage = '加载任务详情失败';
@@ -1162,16 +1381,63 @@
                             errorMessage += ': ' + result.error.code;
                         }
                     }
-                    showError(errorMessage);
+                    
+                    // 显示错误信息在模态框中
+                    modalBody.innerHTML = `
+                        <div class="empty-state">
+                            <i class="bi bi-exclamation-triangle text-danger"></i>
+                            <h4>加载失败</h4>
+                            <p>${errorMessage}</p>
+                            <button class="btn btn-primary" onclick="showTaskDetail('${taskId}')">
+                                <i class="bi bi-arrow-clockwise"></i> 重试
+                            </button>
+                        </div>
+                    `;
                 }
             } catch (error) {
-                showError('网络错误: ' + error.message);
+                // 显示网络错误在模态框中
+                modalBody.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-wifi-off text-danger"></i>
+                        <h4>网络错误</h4>
+                        <p>网络连接失败: ${error.message}</p>
+                        <button class="btn btn-primary" onclick="showTaskDetail('${taskId}')">
+                            <i class="bi bi-arrow-clockwise"></i> 重试
+                        </button>
+                    </div>
+                `;
             }
         }
 
         // 显示任务详情内容
         function displayTaskDetail(task) {
             const content = document.getElementById('taskDetailContent');
+            
+            // 判断是否可以导出：任务必须已完成且有成功处理的视频
+            const canExport = task.status === 'completed' && task.videos_success > 0;
+            
+            // 更新导出按钮状态
+            const csvBtn = document.querySelector('button[onclick="exportTask(\'csv\')"]');
+            const pdfBtn = document.querySelector('button[onclick="exportTask(\'pdf\')"]');
+            
+            if (csvBtn && pdfBtn) {
+                if (canExport) {
+                    csvBtn.disabled = false;
+                    pdfBtn.disabled = false;
+                    csvBtn.title = '导出CSV格式的分析报告';
+                    pdfBtn.title = '导出PDF格式的分析报告';
+                } else {
+                    csvBtn.disabled = true;
+                    pdfBtn.disabled = true;
+                    if (task.status !== 'completed') {
+                        csvBtn.title = '任务未完成，无法导出';
+                        pdfBtn.title = '任务未完成，无法导出';
+                    } else if (task.videos_success === 0) {
+                        csvBtn.title = '没有成功处理的视频，无法导出';
+                        pdfBtn.title = '没有成功处理的视频，无法导出';
+                    }
+                }
+            }
             
             const videosHtml = task.videos ? task.videos.map(video => `
                 <div class="video-item">
@@ -1210,6 +1476,10 @@
                 <div class="detail-section">
                     <h6><i class="bi bi-info-circle"></i> 任务信息</h6>
                     <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">任务名称</span>
+                            <span class="detail-value">${task.name || '未命名任务'}</span>
+                        </div>
                         <div class="detail-item">
                             <span class="detail-label">任务ID</span>
                             <span class="detail-value">${task.id}</span>
@@ -1271,7 +1541,231 @@
                         ${videosHtml}
                     </div>
                 </div>
+                
+                ${getAnalysisReportSection(task)}
             `;
+        }
+
+        // 获取分析报告部分
+        function getAnalysisReportSection(task) {
+            let analysisReport = task.analysis_report || {};
+            
+            // 处理不同格式的分析报告
+            if (typeof task.analysis_report === 'string') {
+                try {
+                    analysisReport = JSON.parse(task.analysis_report);
+                } catch (e) {
+                    console.warn('分析报告JSON解析失败:', e);
+                    analysisReport = {
+                        markdown: "分析报告格式错误，请重新生成",
+                        analysis_status: "failed"
+                    };
+                }
+            } else if (typeof task.analysis_report === 'object' && task.analysis_report !== null) {
+                analysisReport = task.analysis_report;
+            } else {
+                // 如果没有分析报告，使用默认结构
+                analysisReport = {
+                    markdown: "",
+                    analysis_status: "pending"
+                };
+            }
+            
+            // 检查分析状态
+            const analysisStatus = analysisReport.analysis_status || task.analysis_status || 'pending';
+            const isCompleted = analysisStatus === 'completed';
+            const isFailed = analysisStatus === 'failed';
+            const isPending = analysisStatus === 'pending';
+            
+            let statusText = '';
+            let statusClass = '';
+            if (isCompleted) {
+                statusText = '已完成';
+                statusClass = 'text-success';
+            } else if (isFailed) {
+                statusText = '生成失败';
+                statusClass = 'text-danger';
+            } else if (isPending) {
+                statusText = '未生成';
+                statusClass = 'text-secondary';
+            }
+            
+            // 获取markdown内容
+            let markdownContent = '';
+            
+            // 如果分析报告包含markdown字段，直接使用
+            if (analysisReport.markdown) {
+                markdownContent = analysisReport.markdown;
+            } else if (analysisReport.content) {
+                markdownContent = analysisReport.content;
+            } else {
+                // 否则组合各个字段为markdown格式
+                const sections = [
+                    { title: '战略定位与价值主张析出', content: analysisReport.strategic_positioning },
+                    { title: '内容架构的"公式化"拆解', content: analysisReport.content_architecture },
+                    { title: '语言修辞系统的精细解剖', content: analysisReport.language_rhetoric },
+                    { title: '元理论支撑分析', content: analysisReport.theoretical_foundation },
+                    { title: '可超越性分析与战略建议', content: analysisReport.strategic_recommendations },
+                    { title: '总体评价与核心洞察', content: analysisReport.overall_summary }
+                ];
+                
+                markdownContent = sections
+                    .filter(section => section.content && section.content !== '暂无分析')
+                    .map(section => `## ${section.title}\n\n${section.content}`)
+                    .join('\n\n');
+            }
+            
+            // 根据状态显示不同的内容
+            let contentHtml = '';
+            if (isPending && !markdownContent) {
+                contentHtml = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-robot text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">分析报告尚未生成</h5>
+                        <p class="text-muted">任务完成后，系统将自动生成竞品风格分析报告</p>
+                        <button class="btn btn-primary" onclick="regenerateReport()" id="regenerateBtn">
+                            <i class="bi bi-play-circle"></i> 立即生成报告
+                        </button>
+                    </div>
+                `;
+            } else if (isFailed) {
+                contentHtml = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                        <h5 class="text-danger mt-3">报告生成失败</h5>
+                        <p class="text-muted">分析过程中遇到问题，请重试</p>
+                        <button class="btn btn-primary" onclick="regenerateReport()" id="regenerateBtn">
+                            <i class="bi bi-arrow-clockwise"></i> 重新生成报告
+                        </button>
+                    </div>
+                `;
+            } else {
+                contentHtml = `
+                    <div class="markdown-content" id="analysisMarkdown">
+                        ${markdownContent ? convertMarkdownToHtml(markdownContent) : '<p class="text-muted">暂无分析内容</p>'}
+                    </div>
+                `;
+            }
+            
+            return `
+                <div class="detail-section">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                        <h6 class="mb-2 mb-md-0"><i class="bi bi-robot"></i> 竞品风格与策略深度解构报告 
+                            <span class="badge ${statusClass}">${statusText}</span>
+                        </h6>
+                        ${isCompleted || isFailed || (isPending && markdownContent) ? `
+                            <button class="btn btn-outline-primary btn-sm" onclick="regenerateReport()" id="regenerateBtn">
+                                <i class="bi bi-arrow-clockwise"></i> 重新生成报告
+                            </button>
+                        ` : ''}
+                    </div>
+                    ${contentHtml}
+                </div>
+            `;
+        }
+
+        // 改进的Markdown转HTML函数
+        function convertMarkdownToHtml(markdown) {
+            if (!markdown) return '<p class="text-muted">暂无分析内容</p>';
+            
+            let html = markdown
+                // 处理代码块（必须在其他处理之前）
+                .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                // 处理行内代码
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                // 处理粗体
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                // 处理斜体
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                // 处理标题
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                // 处理水平线
+                .replace(/^---$/gim, '<hr>')
+                // 处理有序列表
+                .replace(/^(\d+)\. (.*$)/gim, '<li>$2</li>')
+                // 处理无序列表
+                .replace(/^[\*\-\+] (.*$)/gim, '<li>$1</li>')
+                // 处理段落（先处理双换行）
+                .replace(/\n\n+/g, '</p><p>')
+                // 处理单换行
+                .replace(/\n/g, '<br>')
+                // 包装段落
+                .replace(/^(.*)$/gim, '<p>$1</p>');
+            
+            // 清理和优化
+            html = html
+                // 清理空段落
+                .replace(/<p><\/p>/g, '')
+                .replace(/<p>\s*<\/p>/g, '')
+                // 清理标题周围的p标签
+                .replace(/<p>(<h[1-6]>.*<\/h[1-6]>)<\/p>/g, '$1')
+                // 清理列表项周围的p标签
+                .replace(/<p>(<li>.*<\/li>)<\/p>/g, '$1')
+                // 清理水平线周围的p标签
+                .replace(/<p>(<hr>)<\/p>/g, '$1')
+                // 清理代码块周围的p标签
+                .replace(/<p>(<pre>.*<\/pre>)<\/p>/g, '$1')
+                // 将连续的li包装在ul中
+                .replace(/(<li>.*<\/li>)(\s*<li>.*<\/li>)*/g, function(match) {
+                    return '<ul>' + match + '</ul>';
+                })
+                // 清理多余的br标签
+                .replace(/<br>\s*<br>/g, '<br>')
+                .replace(/<br>\s*<\/p>/g, '</p>')
+                .replace(/<p>\s*<br>/g, '<p>');
+            
+            return html;
+        }
+
+        // 重新生成报告
+        async function regenerateReport() {
+            if (!currentTaskId) return;
+            
+            const btn = document.getElementById('regenerateBtn');
+            if (!btn) return;
+            
+            // 禁用按钮并显示加载状态
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> 生成中...';
+            
+            try {
+                const response = await fetch(`/api/v1/tasks/${currentTaskId}/regenerate-report`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('报告重新生成成功！', 'success');
+                    // 重新加载任务详情
+                    await showTaskDetail(currentTaskId);
+                } else {
+                    // 正确处理错误对象
+                    let errorMessage = '重新生成报告失败';
+                    if (result.error) {
+                        if (typeof result.error === 'string') {
+                            errorMessage += ': ' + result.error;
+                        } else if (result.error.message) {
+                            errorMessage += ': ' + result.error.message;
+                        } else if (result.error.code) {
+                            errorMessage += ': ' + result.error.code;
+                        }
+                    }
+                    showMessage(errorMessage, 'danger');
+                }
+            } catch (error) {
+                console.error('重新生成报告失败:', error);
+                showMessage('重新生成报告失败，请稍后重试', 'danger');
+            } finally {
+                // 恢复按钮状态
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 重新生成报告';
+            }
         }
 
         // 导出任务数据

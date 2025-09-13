@@ -48,6 +48,11 @@ class Config:
     DEFAULT_QUOTA = int(os.environ.get('DEFAULT_QUOTA', 100))
     PREMIUM_QUOTA = int(os.environ.get('PREMIUM_QUOTA', 1000))
     
+    # DeepSeek 配置
+    DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
+    DEEPSEEK_MODEL = os.environ.get('DEEPSEEK_MODEL', 'deepseek-chat')
+    DEEPSEEK_BASE_URL = os.environ.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com/v1/chat/completions')
+    
     # 日志配置
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
     LOG_FILE = os.environ.get('LOG_FILE') or str(BASE_DIR / 'logs' / 'app.log')

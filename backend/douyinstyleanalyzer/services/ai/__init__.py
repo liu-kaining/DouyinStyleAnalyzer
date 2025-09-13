@@ -2,13 +2,9 @@
 AI 服务模块 - DouyinStyleAnalyzer 项目的 AI 代理功能
 """
 
-from .llm_provider import LLMProvider, LLMProviderFactory
-from .task_manager import TaskManager
-from .analysis_service import AnalysisService
+from .deepseek_analyzer import DeepSeekAnalyzer, analyze_blogger_with_deepseek
 
 __all__ = [
-    "LLMProvider",
-    "LLMProviderFactory",
-    "TaskManager", 
-    "AnalysisService",
+    "DeepSeekAnalyzer",
+    "analyze_blogger_with_deepseek",
 ]

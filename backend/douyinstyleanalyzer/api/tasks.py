@@ -70,6 +70,27 @@ def get_tasks(user):
         }), 500
 
 
+@tasks_bp.route('/queue-status', methods=['GET'])
+@require_auth
+def get_queue_status(user):
+    """获取任务队列状态"""
+    try:
+        from ..services.task_manager import TaskManager
+        task_manager = TaskManager()
+        queue_status = task_manager.get_queue_status()
+        
+        return jsonify({
+            'success': True,
+            'data': queue_status
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'获取队列状态失败: {str(e)}'
+        }), 500
+
+
 def get_current_user():
     """获取当前用户"""
     auth_header = request.headers.get('Authorization')
@@ -101,7 +122,7 @@ def get_status_message(task):
             return f"正在下载音频... (已处理 {task.videos_processed or 0}/{task.total_videos or 0})"
         elif task.current_step == TaskStep.TRANSCRIBING:
             return f"正在语音识别... (已处理 {task.videos_processed or 0}/{task.total_videos or 0})"
-        elif task.current_step == TaskStep.SAVING:
+        elif task.current_step == TaskStep.FINALIZING:
             return "正在保存结果..."
         else:
             return "任务运行中..."
@@ -142,6 +163,23 @@ def create_task(user):
                 }
             }), 400
         
+        # 检查是否已存在该博主的任务（去重检查）
+        existing_task = AnalysisTask.query.filter_by(
+            user_id=user.id,
+            target_url=data['target_url']
+        ).filter(
+            AnalysisTask.status.in_(['PENDING', 'RUNNING'])
+        ).first()
+        
+        if existing_task:
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 'DUPLICATE_TASK',
+                    'message': f'该博主已有任务正在处理中（任务ID: {existing_task.id[:8]}...）'
+                }
+            }), 409
+        
         # 检查用户配额
         if user.quota_remaining <= 0:
             return jsonify({
@@ -152,18 +190,19 @@ def create_task(user):
                 }
             }), 403
         
-        # 检查是否有正在运行的任务
-        running_task = AnalysisTask.query.filter_by(
+        # 检查并发任务限制（最多5个并发任务）
+        running_tasks_count = AnalysisTask.query.filter_by(
             user_id=user.id,
             status=TaskStatus.RUNNING
-        ).first()
+        ).count()
         
-        if running_task:
+        MAX_CONCURRENT_TASKS = 5
+        if running_tasks_count >= MAX_CONCURRENT_TASKS:
             return jsonify({
                 'success': False,
                 'error': {
-                    'code': 'TASK_ALREADY_RUNNING',
-                    'message': '已有任务正在运行'
+                    'code': 'TOO_MANY_CONCURRENT_TASKS',
+                    'message': f'最多只能同时运行 {MAX_CONCURRENT_TASKS} 个任务，当前已有 {running_tasks_count} 个任务在运行'
                 }
             }), 409
         
@@ -242,12 +281,16 @@ def get_task(user, task_id):
         videos = VideoData.query.filter_by(task_id=task_id).all()
         video_data = [video.to_dict() for video in videos]
         
+        # 获取分析报告
+        analysis_report = task.get_analysis_report()
+        
         # 添加额外的状态信息
         task_data.update({
             'processed_videos': task_data.get('videos_processed', 0),
             'failed_videos': task_data.get('videos_failed', 0),
             'status_message': get_status_message(task),
-            'videos': video_data
+            'videos': video_data,
+            'analysis_report': analysis_report
         })
         
         return jsonify({
@@ -525,27 +568,33 @@ def delete_task(user, task_id):
 @tasks_bp.route('/clear', methods=['DELETE'])
 @require_auth
 def clear_all_tasks(user):
-    """清空所有任务"""
+    """清空所有任务、文件和数据库数据"""
     try:
+        from ..config import Config
+        import os
+        import glob
+        
         # 获取用户的所有任务
         tasks = AnalysisTask.query.filter_by(user_id=user.id).all()
         
-        if not tasks:
-            return jsonify({
-                'success': True,
-                'message': '没有任务需要清空'
-            }), 200
+        # 如果用户是管理员，清空所有任务
+        if user.id == 'anonymous_user' or user.id == 'dev_user':
+            print(f"管理员用户 {user.id} 执行完全清空操作")
+            # 清空所有任务和视频数据
+            VideoData.query.delete()
+            AnalysisTask.query.delete()
+            tasks = []  # 重置任务列表，因为已经全部删除
         
-        # 删除所有相关的视频数据和输出文件
         deleted_files = 0
+        deleted_audio_files = 0
+        
+        # 删除所有相关的视频数据和文件
         for task in tasks:
             # 删除相关的视频数据
             VideoData.query.filter_by(task_id=task.id).delete()
             
             # 删除对应的输出文件
             if task.result_file:
-                from ..config import Config
-                import os
                 output_file_path = os.path.join(Config.OUTPUT_DIR, task.result_file)
                 if os.path.exists(output_file_path):
                     try:
@@ -559,11 +608,46 @@ def clear_all_tasks(user):
         for task in tasks:
             db.session.delete(task)
         
+        # 清空所有输出文件（包括JSON文件）
+        output_dir = Config.OUTPUT_DIR
+        if os.path.exists(output_dir):
+            json_files = glob.glob(os.path.join(output_dir, "*.json"))
+            for json_file in json_files:
+                try:
+                    os.remove(json_file)
+                    deleted_files += 1
+                    print(f"删除输出文件: {json_file}")
+                except Exception as e:
+                    print(f"删除输出文件失败 {json_file}: {e}")
+        
+        # 清空所有音频文件
+        audio_dir = Config.AUDIO_DIR
+        if os.path.exists(audio_dir):
+            audio_files = glob.glob(os.path.join(audio_dir, "*.mp4"))
+            for audio_file in audio_files:
+                try:
+                    os.remove(audio_file)
+                    deleted_audio_files += 1
+                    print(f"删除音频文件: {audio_file}")
+                except Exception as e:
+                    print(f"删除音频文件失败 {audio_file}: {e}")
+        
+        # 清空cookies文件
+        temp_dir = Config.TEMP_DIR
+        if os.path.exists(temp_dir):
+            cookie_files = glob.glob(os.path.join(temp_dir, "cookies_*.txt"))
+            for cookie_file in cookie_files:
+                try:
+                    os.remove(cookie_file)
+                    print(f"删除cookies文件: {cookie_file}")
+                except Exception as e:
+                    print(f"删除cookies文件失败 {cookie_file}: {e}")
+        
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': f'已清空 {len(tasks)} 个任务'
+            'message': f'已完全清空：{len(tasks)} 个任务，{deleted_files} 个输出文件，{deleted_audio_files} 个音频文件'
         }), 200
         
     except Exception as e:
@@ -857,6 +941,29 @@ def export_to_pdf(task, videos):
                     story.append(Paragraph("─" * 50, normal_style))
                     story.append(Spacer(1, 10))
         
+        # 添加AI分析报告
+        analysis_report = task.get_analysis_report()
+        if analysis_report and analysis_report.get('markdown'):
+            story.append(Spacer(1, 20))
+            story.append(Paragraph("竞品风格与策略深度解构报告", section_style))
+            
+            # 处理Markdown格式的分析报告
+            markdown_content = analysis_report.get('markdown', '')
+            if markdown_content:
+                # 将Markdown转换为适合PDF的格式
+                pdf_content = _convert_markdown_to_pdf(markdown_content, normal_style, transcript_style)
+                story.extend(pdf_content)
+            else:
+                story.append(Paragraph("分析报告暂无内容", normal_style))
+        elif analysis_report and analysis_report.get('analysis_status') == 'pending':
+            story.append(Spacer(1, 20))
+            story.append(Paragraph("竞品风格与策略深度解构报告", section_style))
+            story.append(Paragraph("分析报告尚未生成", normal_style))
+        elif analysis_report and analysis_report.get('analysis_status') == 'failed':
+            story.append(Spacer(1, 20))
+            story.append(Paragraph("竞品风格与策略深度解构报告", section_style))
+            story.append(Paragraph("分析报告生成失败", normal_style))
+        
         # 添加统计信息
         story.append(Spacer(1, 20))
         story.append(Paragraph("统计信息", section_style))
@@ -914,3 +1021,211 @@ def export_to_pdf(task, videos):
                 'message': f'PDF生成失败: {str(e)}'
             }
         }), 500
+
+
+@tasks_bp.route('/<task_id>/regenerate-report', methods=['POST'])
+@require_auth
+def regenerate_report(user, task_id):
+    """重新生成AI分析报告"""
+    try:
+        # 验证任务是否存在且属于当前用户
+        task = AnalysisTask.query.filter_by(id=task_id, user_id=user.id).first()
+        if not task:
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 'TASK_NOT_FOUND',
+                    'message': '任务不存在或无权限访问'
+                }
+            }), 404
+
+        # 检查任务状态 - 允许运行中和已完成的任务重新生成报告
+        if task.status not in [TaskStatus.COMPLETED, TaskStatus.RUNNING]:
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 'TASK_NOT_READY',
+                    'message': '只有运行中或已完成的任务才能重新生成报告'
+                }
+            }), 400
+
+        # 检查是否有视频数据
+        videos = VideoData.query.filter_by(task_id=task_id).all()
+        if not videos:
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 'NO_VIDEO_DATA',
+                    'message': '没有找到视频数据，无法生成报告'
+                }
+            }), 400
+
+        # 准备视频数据
+        videos_data = []
+        for video in videos:
+            if video.transcript:  # 只包含有转录文本的视频
+                videos_data.append({
+                    'title': video.title or f'视频 {video.video_id}',
+                    'transcript': video.transcript  # 修正字段名
+                })
+
+        if not videos_data:
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 'NO_TRANSCRIPTION_DATA',
+                    'message': '没有找到转录数据，无法生成报告'
+                }
+            }), 400
+
+        # 调用AI分析服务
+        from ..services.ai.deepseek_analyzer import DeepSeekAnalyzer
+        analyzer = DeepSeekAnalyzer()
+        
+        # 获取博主名称
+        blogger_name = task.name or '未知博主'
+        
+        print(f"🔄 重新生成报告 - 任务: {task_id}, 博主: {blogger_name}, 视频数: {len(videos_data)}")
+        
+        # 执行AI分析
+        analysis_result = analyzer.analyze_blogger_style(blogger_name, videos_data)
+        
+        if analysis_result:
+            # 保存分析结果到数据库
+            task.set_analysis_report(analysis_result, 'completed')
+            db.session.commit()
+            
+            print(f"✅ 报告重新生成成功 - 任务: {task_id}")
+            
+            return jsonify({
+                'success': True,
+                'message': '报告重新生成成功',
+                'data': {
+                    'task_id': task_id,
+                    'analysis_report': analysis_result
+                }
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 'ANALYSIS_FAILED',
+                    'message': 'AI分析失败，请稍后重试'
+                }
+            }), 500
+
+    except Exception as e:
+        print(f"❌ 重新生成报告失败: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': {
+                'code': 'REGENERATE_REPORT_ERROR',
+                'message': f'重新生成报告失败: {str(e)}'
+            }
+        }), 500
+
+
+def _convert_markdown_to_pdf(markdown_content, normal_style, transcript_style):
+    """将Markdown内容转换为PDF格式的段落列表"""
+    from reportlab.platypus import Paragraph, Spacer
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib import colors
+    import re
+    
+    story = []
+    lines = markdown_content.split('\n')
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            story.append(Spacer(1, 6))
+            continue
+            
+        # 处理标题
+        if line.startswith('# '):
+            # 一级标题
+            title_style = ParagraphStyle(
+                'MarkdownH1',
+                parent=normal_style,
+                fontSize=16,
+                spaceAfter=12,
+                spaceBefore=16,
+                textColor=colors.darkblue,
+                fontName=normal_style.fontName
+            )
+            story.append(Paragraph(line[2:], title_style))
+        elif line.startswith('## '):
+            # 二级标题
+            title_style = ParagraphStyle(
+                'MarkdownH2',
+                parent=normal_style,
+                fontSize=14,
+                spaceAfter=10,
+                spaceBefore=12,
+                textColor=colors.darkblue,
+                fontName=normal_style.fontName
+            )
+            story.append(Paragraph(line[3:], title_style))
+        elif line.startswith('### '):
+            # 三级标题
+            title_style = ParagraphStyle(
+                'MarkdownH3',
+                parent=normal_style,
+                fontSize=12,
+                spaceAfter=8,
+                spaceBefore=10,
+                textColor=colors.darkgreen,
+                fontName=normal_style.fontName
+            )
+            story.append(Paragraph(line[4:], title_style))
+        elif line.startswith('**') and line.endswith('**') and line.count('**') == 2:
+            # 整行粗体文本
+            bold_style = ParagraphStyle(
+                'MarkdownBold',
+                parent=normal_style,
+                fontSize=normal_style.fontSize,
+                fontName=normal_style.fontName
+            )
+            story.append(Paragraph(f"<b>{line[2:-2]}</b>", bold_style))
+        elif line.startswith('- ') or line.startswith('* '):
+            # 列表项
+            list_style = ParagraphStyle(
+                'MarkdownList',
+                parent=normal_style,
+                fontSize=normal_style.fontSize,
+                leftIndent=20,
+                fontName=normal_style.fontName
+            )
+            story.append(Paragraph(f"• {line[2:]}", list_style))
+        elif line.startswith('---'):
+            # 分隔线
+            story.append(Spacer(1, 10))
+            story.append(Paragraph("─" * 50, normal_style))
+            story.append(Spacer(1, 10))
+        else:
+            # 普通段落 - 安全地处理Markdown格式
+            formatted_line = _safe_convert_markdown_to_html(line)
+            story.append(Paragraph(formatted_line, transcript_style))
+    
+    return story
+
+
+def _safe_convert_markdown_to_html(text):
+    """安全地将Markdown格式转换为HTML，避免标签嵌套问题"""
+    import re
+    
+    # 转义HTML特殊字符
+    text = text.replace('&', '&amp;')
+    text = text.replace('<', '&lt;')
+    text = text.replace('>', '&gt;')
+    
+    # 处理粗体 **text**
+    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
+    
+    # 处理斜体 *text*
+    text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
+    
+    # 处理行内代码 `code`
+    text = re.sub(r'`(.*?)`', r'<font name="Courier"><b>\1</b></font>', text)
+    
+    return text

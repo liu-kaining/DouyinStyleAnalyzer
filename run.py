@@ -11,6 +11,18 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
+# 加载 .env 文件
+try:
+    from dotenv import load_dotenv
+    env_path = project_root / '.env'
+    if env_path.exists():
+        load_dotenv(env_path)
+        print(f"✅ 已加载环境变量文件: {env_path}")
+    else:
+        print(f"⚠️ 未找到 .env 文件: {env_path}")
+except ImportError:
+    print("⚠️ 未安装 python-dotenv，无法自动加载 .env 文件")
+
 from backend.douyinstyleanalyzer import create_app
 
 # 创建 Flask 应用

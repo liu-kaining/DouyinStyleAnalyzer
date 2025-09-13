@@ -42,6 +42,7 @@ class AnalysisTask(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     
     # 任务基本信息
+    name = db.Column(db.String(200), nullable=True)  # 任务名称，如"亿文的分析任务"
     target_url = db.Column(db.Text, nullable=False)
     target_username = db.Column(db.String(100), nullable=True)  # 从URL解析出的用户名
     
@@ -73,6 +74,10 @@ class AnalysisTask(db.Model):
     error_message = db.Column(db.Text, nullable=True)
     estimated_remaining = db.Column(db.Integer, nullable=True)  # 预计剩余时间（秒）
     
+    # AI分析报告
+    analysis_report = db.Column(db.Text, nullable=True)  # JSON格式的分析报告
+    analysis_status = db.Column(db.String(20), default='pending', nullable=False)  # pending, completed, failed
+    
     # 关联关系
     videos = db.relationship('VideoData', backref='task', lazy='dynamic', cascade='all, delete-orphan')
     
@@ -92,6 +97,7 @@ class AnalysisTask(db.Model):
         
         return {
             'id': self.id,
+            'name': self.name,
             'user_id': self.user_id,
             'target_url': self.target_url,
             'target_username': self.target_username,
@@ -112,7 +118,9 @@ class AnalysisTask(db.Model):
             'updated_at': format_time_with_tz(self.updated_at),
             'result_file': self.result_file,
             'error_message': self.error_message,
-            'estimated_remaining': self.estimated_remaining
+            'estimated_remaining': self.estimated_remaining,
+            'analysis_report': self.get_analysis_report(),
+            'analysis_status': self.analysis_status
         }
     
     def update_status(self, status, step=None, progress=None, error_message=None):
@@ -162,6 +170,32 @@ class AnalysisTask(db.Model):
         self.result_file = filename
         self.updated_at = china_now()
         db.session.commit()
+    
+    def set_analysis_report(self, report_data, status='completed'):
+        """设置分析报告"""
+        import json
+        self.analysis_report = json.dumps(report_data, ensure_ascii=False, indent=2)
+        self.analysis_status = status
+        self.updated_at = china_now()
+        db.session.commit()
+    
+    def get_analysis_report(self):
+        """获取分析报告"""
+        if self.analysis_report:
+            import json
+            try:
+                return json.loads(self.analysis_report)
+            except:
+                # 如果JSON解析失败，返回默认结构
+                return {
+                    "markdown": "分析报告格式错误，请重新生成",
+                    "analysis_status": "failed"
+                }
+        # 如果没有分析报告，返回空结构而不是None
+        return {
+            "markdown": "",
+            "analysis_status": "pending"
+        }
     
     @classmethod
     def create_task(cls, user_id, target_url, **kwargs):

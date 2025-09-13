@@ -732,34 +732,34 @@
                             <strong>不适用：</strong>影视剪辑、舞蹈、旅行记录、长视频等
                         </div>
                         
-                        <!-- 核心特性展示 -->
+                        <!-- 核心价值展示 -->
                         <div class="hero-features mb-5">
                             <div class="row g-4">
                                 <div class="col-md-4">
                                     <div class="feature-highlight">
                                         <div class="feature-icon-large mb-3">
-                                            <i class="bi bi-collection-play"></i>
+                                            <i class="bi bi-lightbulb"></i>
                                         </div>
-                                        <h5 class="text-dark fw-bold">智能采集</h5>
-                                        <p class="text-muted small">自动获取博主视频列表</p>
+                                        <h5 class="text-dark fw-bold">智能洞察</h5>
+                                        <p class="text-muted small">深度解构博主创作策略</p>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="feature-highlight">
                                         <div class="feature-icon-large mb-3">
-                                            <i class="bi bi-mic"></i>
+                                            <i class="bi bi-graph-up-arrow"></i>
                                         </div>
-                                        <h5 class="text-dark fw-bold">语音识别</h5>
-                                        <p class="text-muted small">95%+ 准确率转录</p>
+                                        <h5 class="text-dark fw-bold">数据驱动</h5>
+                                        <p class="text-muted small">基于AI的精准分析</p>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="feature-highlight">
                                         <div class="feature-icon-large mb-3">
-                                            <i class="bi bi-graph-up"></i>
+                                            <i class="bi bi-trophy"></i>
                                         </div>
-                                        <h5 class="text-dark fw-bold">风格分析</h5>
-                                        <p class="text-muted small">深度挖掘创作规律</p>
+                                        <h5 class="text-dark fw-bold">超越竞品</h5>
+                                        <p class="text-muted small">提供可操作的战略建议</p>
                                     </div>
                                 </div>
                             </div>
@@ -1173,7 +1173,17 @@
                     // 开始监控任务进度
                     startTaskMonitoring(result.data.task_id);
                 } else {
-                    showMessage('任务创建失败: ' + result.error, 'danger');
+                    let errorMessage = '任务创建失败';
+                    if (result.error) {
+                        if (typeof result.error === 'string') {
+                            errorMessage += ': ' + result.error;
+                        } else if (result.error.message) {
+                            errorMessage += ': ' + result.error.message;
+                        } else if (result.error.code) {
+                            errorMessage += ': ' + result.error.code;
+                        }
+                    }
+                    showMessage(errorMessage, 'danger');
                 }
             } catch (error) {
                 showMessage('网络错误: ' + error.message, 'danger');

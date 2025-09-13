@@ -274,6 +274,55 @@ class DouyinVideoScraper:
             print(f"❌ 登录状态验证失败: {e}")
             return False
     
+    def _get_blogger_name(self) -> Optional[str]:
+        """获取博主名字"""
+        try:
+            # 尝试多种选择器获取博主名字
+            name_selectors = [
+                "h1[data-e2e='user-title']",  # 用户标题
+                "h1[class*='title']",  # 标题类
+                "div[data-e2e='user-title']",  # 用户标题div
+                "span[data-e2e='user-title']",  # 用户标题span
+                "h1",  # 通用h1
+                ".user-title",  # 用户标题类
+                "[class*='username']",  # 用户名类
+                "[class*='nickname']",  # 昵称类
+            ]
+            
+            for selector in name_selectors:
+                try:
+                    elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                    for element in elements:
+                        text = element.text.strip()
+                        if text and len(text) < 50 and not text.isdigit():  # 过滤掉过长的文本和纯数字
+                            return text
+                except:
+                    continue
+            
+            # 如果CSS选择器失败，尝试XPath
+            xpath_selectors = [
+                "//h1[contains(@class, 'title')]",
+                "//div[contains(@class, 'user')]//h1",
+                "//span[contains(@class, 'username')]",
+                "//span[contains(@class, 'nickname')]",
+            ]
+            
+            for xpath in xpath_selectors:
+                try:
+                    elements = self.driver.find_elements(By.XPATH, xpath)
+                    for element in elements:
+                        text = element.text.strip()
+                        if text and len(text) < 50 and not text.isdigit():
+                            return text
+                except:
+                    continue
+            
+            return None
+            
+        except Exception as e:
+            print(f"⚠️ 获取博主名字失败: {e}")
+            return None
+    
     def scrape_videos(self, user_url: str, max_videos: int = 50) -> List[Dict]:
         """采集用户视频列表"""
         def _scrape_videos_internal():
@@ -287,6 +336,13 @@ class DouyinVideoScraper:
             # 访问用户主页
             self.driver.get(user_url)
             time.sleep(5)
+            
+            # 获取博主名字
+            blogger_name = self._get_blogger_name()
+            if blogger_name:
+                print(f"👤 博主名字: {blogger_name}")
+            else:
+                print("⚠️ 无法获取博主名字")
             
             # 等待页面加载
             try:
@@ -354,7 +410,16 @@ class DouyinVideoScraper:
             except Exception as e:
                 print(f"⚠️ 获取cookies失败: {e}")
             
-            return videos
+            # 返回包含博主名字的结果
+            result = {
+                'videos': videos,
+                'blogger_name': blogger_name,
+                'total_found': len(videos) + skipped_count,
+                'new_videos': len(videos),
+                'skipped_videos': skipped_count
+            }
+            
+            return result
         
         # 使用重试机制执行采集
         try:
